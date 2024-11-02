@@ -80,10 +80,6 @@ local function create_floating_cli_monitor()
     local win = vim.api.nvim_open_win(buf, true, opts)
     vim.api.nvim_buf_set_keymap(buf, "n", "<CR>", "<cmd>lua vim.api.nvim_win_close(" .. win .. ", false)<CR>",
         { noremap = true, silent = true })
-    -- Set buffer options for the CLI monitor
-    vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "swapfile", false)
 
     return buf, win, opts
 end
@@ -125,13 +121,6 @@ function M.check()
     -- Create the output window buffer and window
     local buf, win, opts = create_floating_cli_monitor()
 
-    -- Function to append lines to the output buffer and adjust height
-    local function append_to_buffer(lines)
-        -- Strip ANSI codes from each line and append to buffer
-        local cleaned_lines = vim.tbl_map(strip_ansi_codes, lines)
-        vim.api.nvim_buf_set_lines(buf, -1, -1, false, cleaned_lines)
-        adjust_window_height(win, buf, opts)
-    end
 
     -- Command to compile in the current directory
     local cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand('%')
@@ -141,7 +130,7 @@ function M.check()
         stdout_buffered = false,
         on_stdout = function(_, data)
             if data then
-                append_to_buffer(data)
+                M.append_to_buffer(data, buf, win, opts)
             end
         end,
         on_stderr = function(_, data)
@@ -155,32 +144,32 @@ function M.check()
                     end
                 end
                 if #error_lines > 0 then
-                    append_to_buffer(error_lines)
+                    M.append_to_buffer(error_lines)
                 end
             end
         end,
         on_exit = function(_, exit_code)
             if exit_code == 0 then
-                append_to_buffer({ "--- Code checked successfully. ---" })
+                M.append_to_buffer({ "--- Code checked successfully. ---" }, buf, win, opts)
             else
-                append_to_buffer({ "--- Code check failed. ---" })
+                M.append_to_buffer({ "--- Code check failed. ---" }, buf, win, opts)
             end
         end,
     })
 end
 
+function M.M.append_to_buffer(lines, buf, win, opts)
+    local cleaned_lines = vim.tbl_map(strip_ansi_codes, lines)
+    vim.api.nvim_buf_set_lines(buf, -1, -1, false, cleaned_lines)
+    adjust_window_height(win, buf, opts)
+end
 
 function M.upload()
     -- Create the CLI monitor buffer and window
     local buf, win, opts = create_floating_cli_monitor()
 
     -- Function to append lines to the monitor buffer and adjust height
-    local function append_to_buffer(lines)
         -- Strip ANSI codes from each line and append to buffer
-        local cleaned_lines = vim.tbl_map(strip_ansi_codes, lines)
-        vim.api.nvim_buf_set_lines(buf, -1, -1, false, cleaned_lines)
-        adjust_window_height(win, buf, opts)
-    end
 
     -- Commands for compiling and uploading
     local compile_cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand('%:p:h')
@@ -192,18 +181,18 @@ function M.upload()
             stdout_buffered = false,
             on_stdout = function(_, data)
                 if data then
-                    append_to_buffer(data)
+                    M.M.append_to_buffer(data, buf, win, opts)
                 end
             end,
             on_stderr = function(_, data)
                 if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-                    append_to_buffer(vim.tbl_map(function(line)
+                    M.append_to_buffer(vim.tbl_map(function(line)
                         return "Error: " .. line
-                    end, data))
+                    end, data), buf, win, opts)
                 end
             end,
             on_exit = function()
-                append_to_buffer({ "--- Upload Complete ---" })
+                M.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
             end,
         })
     end
@@ -213,22 +202,22 @@ function M.upload()
         stdout_buffered = false,
         on_stdout = function(_, data)
             if data then
-                append_to_buffer(data)
+                M.append_to_buffer(data, buf, win, opts)
             end
         end,
         on_stderr = function(_, data)
             if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-                append_to_buffer(vim.tbl_map(function(line)
+                M.append_to_buffer(vim.tbl_map(function(line)
                     return "Error: " .. line
-                end, data))
+                end, data), buf, win, opts)
             end
         end,
         on_exit = function(_, exit_code)
             if exit_code == 0 then
-                append_to_buffer({ "--- Compilation Complete, Starting Upload ---" })
+                M.append_to_buffer({ "--- Compilation Complete, Starting Upload ---" }, buf, win, opts)
                 start_upload()
             else
-                append_to_buffer({ "--- Compilation Failed ---" })
+                M.append_to_buffer({ "--- Compilation Failed ---" }, buf, win, opts)
             end
         end,
     })

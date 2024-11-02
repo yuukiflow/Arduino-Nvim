@@ -25,4 +25,3 @@ Next letter is the first letter of the tool you wanna use.
 - u: upload to set port and fqbn
 - m: opens a new kitty terminal with the monitor
 - s: shows the current status for board, port and fqbn
-- l: opens a gui library manager (built around telescope)

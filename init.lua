@@ -353,6 +353,15 @@ function M.select_port_gui()
     }):find()
 end
 
+function M.InoList()
+    local buf, win, opts = M.create_floating_cli_monitor()
+    -- list all available ports1
+    local handle = io.popen("arduino-cli board list")
+    local result = handle:read("*a")
+    handle:close()
+    M.append_to_buffer({ result }, buf, win, opts)
+end
+
 -- Main GUI function to link board and port selection
 function M.gui()
     M.select_board_gui(function() M.select_port_gui() end)
@@ -374,5 +383,6 @@ vim.api.nvim_create_user_command("InoGUI", function() M.gui() end, {})
 vim.api.nvim_create_user_command("InoMonitor", function() M.monitor() end, {})
 vim.api.nvim_create_user_command("InoSetBaud", function(opts) M.set_baudrate(opts.args) end, { nargs = 1 })
 vim.api.nvim_create_user_command("InoStatus", function() M.status() end, {})
+vim.api.nvim_create_user_command("InoList", function() M.InoList() end, {})
 
 return M

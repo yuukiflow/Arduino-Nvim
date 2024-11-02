@@ -1,4 +1,4 @@
-vim.keymap.set("n", "<Leader>al", ":InoList<CR>", { silent = true })    -- List available ports
+vim.keymap.set("n", "<Leader>ad", ":InoList<CR>", { silent = true })    -- List available ports
 vim.keymap.set("n", "<Leader>au", ":InoUpload<CR>", { silent = true })  -- Upload code
 vim.keymap.set("n", "<Leader>ac", ":InoCheck<CR>", { silent = true })   -- Compile/check code
 vim.keymap.set("n", "<Leader>as", ":InoStatus<CR>", { silent = true })  -- Show current board and port status

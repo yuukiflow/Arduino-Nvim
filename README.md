@@ -20,8 +20,10 @@ I have key bindings set in remap.lua as follow :
 they all start with `<leader> a` and follow a simple rule.
 Next letter is the first letter of the tool you wanna use.
 
-<leader>a:
+`<leader> a`:
 - c: compile and check
 - u: upload to set port and fqbn
 - m: opens a new kitty terminal with the monitor
 - s: shows the current status for board, port and fqbn
+- l: opens a gui library manager (built around telescope)
+- p: displays available ports

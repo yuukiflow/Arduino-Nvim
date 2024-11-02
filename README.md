@@ -27,3 +27,9 @@ Next letter is the first letter of the tool you wanna use.
 - s: shows the current status for board, port and fqbn
 - l: opens a gui library manager (built around telescope)
 - p: displays available ports
+
+Baudrate has to be set manually for now with
+```
+:InoSetBaudrate 115200
+```
+Know that baudrate defaults to 115200 if not set.

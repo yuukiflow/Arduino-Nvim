@@ -13,8 +13,9 @@ function Trim(s)
 end
 
 function M.status()
-    local status = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board, M.port, M.baudrate)
-    os.execute("notify-send -t 3000 '" .. status .. "'")
+    local buf, win, opts = M.create_floating_cli_monitor()
+    local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board, M.port, M.baudrate)
+    M.append_to_buffer({data}, buf, win, opts)
 end
 
 -- Function to save settings to the config file
@@ -58,7 +59,7 @@ local function strip_ansi_codes(line)
 end
 
 -- Function to create a floating CLI monitor window that starts small and grows
-local function create_floating_cli_monitor()
+function M.create_floating_cli_monitor()
     local width = vim.o.columns -- Full width of the screen
     local initial_height = 5    -- Start with a small height (adjustable)
 
@@ -119,7 +120,7 @@ end
 -- Function to check code
 function M.check()
     -- Create the output window buffer and window
-    local buf, win, opts = create_floating_cli_monitor()
+    local buf, win, opts = M.create_floating_cli_monitor()
 
 
     -- Command to compile in the current directory
@@ -158,15 +159,40 @@ function M.check()
     })
 end
 
-function M.M.append_to_buffer(lines, buf, win, opts)
-    local cleaned_lines = vim.tbl_map(strip_ansi_codes, lines)
+-- Helper function to split a string by newlines
+local function split_string_by_newlines(input)
+    local result = {}
+    for line in input:gmatch("[^\r\n]+") do
+        table.insert(result, line)
+    end
+    return result
+end
+
+-- Updated append_to_buffer function
+function M.append_to_buffer(lines, buf, win, opts)
+    -- Ensure lines is a table, even if a single string is passed
+    if type(lines) == "string" then
+        lines = { lines }
+    end
+
+    -- Split each line in the table by newlines
+    local processed_lines = {}
+    for _, line in ipairs(lines) do
+        local split_lines = split_string_by_newlines(line)
+        vim.list_extend(processed_lines, split_lines)
+    end
+
+    -- Clean each line to remove ANSI codes and add to the buffer
+    local cleaned_lines = vim.tbl_map(strip_ansi_codes, processed_lines)
     vim.api.nvim_buf_set_lines(buf, -1, -1, false, cleaned_lines)
+
+    -- Adjust the window height if necessary
     adjust_window_height(win, buf, opts)
 end
 
 function M.upload()
     -- Create the CLI monitor buffer and window
-    local buf, win, opts = create_floating_cli_monitor()
+    local buf, win, opts = M.create_floating_cli_monitor()
 
     -- Function to append lines to the monitor buffer and adjust height
         -- Strip ANSI codes from each line and append to buffer
@@ -181,7 +207,7 @@ function M.upload()
             stdout_buffered = false,
             on_stdout = function(_, data)
                 if data then
-                    M.M.append_to_buffer(data, buf, win, opts)
+                    M.append_to_buffer(data, buf, win, opts)
                 end
             end,
             on_stderr = function(_, data)

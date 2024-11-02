@@ -369,10 +369,19 @@ end
 
 function M.monitor()
     local serial_command = string.format("arduino-cli monitor -p %s -c %s", M.port, M.baudrate)
-    local hypr_command = string.format("hyprctl dispatch exec \"kitty -e sh -c '%s; exec bash'\" &", serial_command)
-    os.execute(hypr_command)
-    --vim.notify("Opening serial monitor on " .. M.port .. " at " .. M.baudrate .. " baud.")
-    vim.print(serial_command)
+
+    -- Open a terminal at the bottom
+    vim.cmd("belowright split | terminal " .. serial_command)
+
+    -- Get the terminal buffer number
+    local term_bufnr = vim.api.nvim_get_current_buf()
+
+    -- Set Ctrl+C to close the terminal window in both terminal and normal mode
+    vim.api.nvim_buf_set_keymap(term_bufnr, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(term_bufnr, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
+
+    -- Notify the user
+    vim.notify("Serial monitor running on " .. M.port .. " at " .. M.baudrate .. " baud.", vim.log.levels.INFO)
 end
 
 vim.api.nvim_create_user_command("InoSetCom", function(opts) M.set_com(opts.args) end, { nargs = 1 })

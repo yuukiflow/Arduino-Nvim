@@ -2,6 +2,11 @@
 
 I've made this plugin to replicate the functionnality of [Arduino IDE](https://www.arduino.cc/en/Software/ArduinoIDE) in neovim. It's a work in progress and I'm open to any feedback.
 
+## Requirements
+
+- arduino-cli
+- kitty
+
 ## Installation
 
 ```sh

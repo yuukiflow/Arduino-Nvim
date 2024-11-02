@@ -367,6 +367,7 @@ function M.gui()
     M.select_board_gui(function() M.select_port_gui() end)
 end
 
+--[[ --deciding if best to split of to float
 function M.monitor()
     local serial_command = string.format("arduino-cli monitor -p %s -c %s", M.port, M.baudrate)
     vim.cmd("belowright split | terminal " .. serial_command)
@@ -374,6 +375,33 @@ function M.monitor()
     vim.api.nvim_buf_set_keymap(term_bufnr, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
     vim.api.nvim_buf_set_keymap(term_bufnr, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
 
+end
+]]--
+function M.monitor()
+    local serial_command = string.format("arduino-cli monitor -p %s -c %s", M.port, M.baudrate)
+
+    local buf = vim.api.nvim_create_buf(false, true)
+
+    local win_width = math.floor(vim.o.columns * 0.8)
+    local win_height = math.floor(vim.o.lines * 0.8)
+    local win_opts = {
+        relative = 'editor',
+        width = win_width,
+        height = win_height,
+        row = math.floor((vim.o.lines - win_height) / 2),
+        col = math.floor((vim.o.columns - win_width) / 2),
+        style = 'minimal',
+        border = 'rounded'
+    }
+
+    local win = vim.api.nvim_open_win(buf, true, win_opts)
+
+    vim.fn.termopen(serial_command)
+
+    vim.cmd('startinsert')
+
+    vim.api.nvim_buf_set_keymap(buf, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
 end
 
 vim.api.nvim_create_user_command("InoSetCom", function(opts) M.set_com(opts.args) end, { nargs = 1 })

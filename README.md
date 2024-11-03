@@ -1,3 +1,6 @@
+# CURRENT STATE = BROKEN
+trying to implement the lsp broke some things, working on it
+
 # An arduino IDE for neovim
 
 I've made this plugin to replicate the functionnality of [Arduino IDE](https://www.arduino.cc/en/Software/ArduinoIDE) in neovim. It's a work in progress and I'm open to any feedback.

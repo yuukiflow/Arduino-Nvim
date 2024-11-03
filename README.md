@@ -8,7 +8,8 @@ I've made this plugin to replicate the functionnality of [Arduino IDE](https://w
 ## Requirements
 
 - arduino-cli
-- kitty
+- clangd
+- telescope
 
 ## Installation
 

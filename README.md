@@ -5,7 +5,8 @@ I've made this plugin to replicate the functionnality of [Arduino IDE](https://w
 ## Requirements
 
 - arduino-cli
-- kitty
+- arduino-language-server (needs lsp.go lib to me modified : https://github.com/arduino/arduino-language-server/issues/187#issuecomment-2241641098)
+- clangd
 
 ## Installation
 

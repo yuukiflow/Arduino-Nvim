@@ -1,5 +1,14 @@
-require("edin.remap")
-require("edin.libGetter")
+require("Arduino-Nvim.remap")
+require("Arduino-Nvim.libGetter")
+require("Arduino-Nvim.lsp")
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "arduino",
+    callback = function()
+        require("Arduino-Nvim.lsp").setup()
+    end
+})
+
 local M = {}
 
 M.board = "uno"
@@ -28,7 +37,6 @@ function M.save_config()
         file:write(string.format("  baudrate = %q,\n", M.baudrate))
         file:write("}\n")
         file:close()
-        os.execute("arduino-cli board attach -p " .. M.port .. "-b " .. M.board " " .. vim.api.nvim_buf_get_name(0) )
     else
         vim.notify("Error: Cannot write to config file.", vim.log.levels.ERROR)
     end

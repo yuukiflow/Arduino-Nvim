@@ -2,20 +2,13 @@ require("Arduino-Nvim.remap")
 require("Arduino-Nvim.libGetter")
 require("Arduino-Nvim.lsp")
 
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = "arduino",
-    callback = function()
-        require("Arduino-Nvim.lsp").setup()
-    end
-})
 
 local M = {}
 
-M.board = "uno"
-M.port = "COM3"
+M.board = "arduino:avr:uno"
+M.port = "/dev/ttyACM0"
 M.baudrate = 115200
-
-local config_file = vim.fn.stdpath('config') .. '/arduino_config.lua'
+local config_file = ".arduino_config.lua"
 
 function Trim(s)
     return s:match("^%s*(.-)%s*$")
@@ -24,7 +17,7 @@ end
 function M.status()
     local buf, win, opts = M.create_floating_cli_monitor()
     local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board, M.port, M.baudrate)
-    M.append_to_buffer({data}, buf, win, opts)
+    M.append_to_buffer({ data }, buf, win, opts)
 end
 
 -- Function to save settings to the config file
@@ -42,26 +35,35 @@ function M.save_config()
     end
 end
 
--- Function to load settings from the config file
-function M.load_config()
-    local config = loadfile(config_file)
-    if config then
-        local ok, settings = pcall(config)
-        if ok and settings then
-            M.board = settings.board or M.board
-            M.port = settings.port or M.port
-            M.baudrate = settings.baudrate or M.baudrate
-        else
-            vim.notify("Error loading config file.", vim.log.levels.ERROR)
-        end
+
+function M.load_or_create_config()
+    -- Check if sketch.yaml exists
+    if vim.fn.filereadable(config_file) == 0 then
+        -- If not, create sketch.yaml with default settings
+        vim.notify("config file not found. Creating with default settings.", vim.log.levels.INFO)
+        local file = io.open(config_file, "w")
+        file:write("local M = {}\n")
+        file:write("M.board = '" .. M.board .. "'\n")
+        file:write("M.port = '" .. M.port .. "'\n")
+        file:write("M.baudrate =" .. M.baudrate .. "\n")
+        file:write("return M\n")
+        file:close()
     else
-        vim.notify("Config file not found. Using default settings.", vim.log.levels.WARN)
+        -- Read existing file and check if fqbn and port match the config
+        local config = loadfile(config_file)
+        if config then
+            local ok, settings = pcall(config)
+            if ok and settings then
+                M.board = settings.board or M.board
+                M.port = settings.port or M.port
+                M.baudrate = settings.baudrate or M.baudrate
+                vim.notify("Config loaded from file: " .. config_file, vim.log.levels.INFO)
+            end
+        end
     end
 end
 
--- Load configuration on startup
-M.load_config()
-
+M.load_or_create_config()
 -- Utility function to strip ANSI escape codes
 local function strip_ansi_codes(line)
     return line:gsub("\27%[[0-9;]*m", "")
@@ -149,7 +151,7 @@ function M.check()
                 local error_lines = {}
                 for _, line in ipairs(data) do
                     local cleaned_line = strip_ansi_codes(line)
-                    if cleaned_line:match("%S") then  -- Only consider non-empty, non-whitespace lines
+                    if cleaned_line:match("%S") then -- Only consider non-empty, non-whitespace lines
                         table.insert(error_lines, "Error: " .. cleaned_line)
                     end
                 end
@@ -204,7 +206,7 @@ function M.upload()
     local buf, win, opts = M.create_floating_cli_monitor()
 
     -- Function to append lines to the monitor buffer and adjust height
-        -- Strip ANSI codes from each line and append to buffer
+    -- Strip ANSI codes from each line and append to buffer
 
     -- Commands for compiling and uploading
     local compile_cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand('%:p:h')
@@ -376,16 +378,6 @@ function M.gui()
     M.select_board_gui(function() M.select_port_gui() end)
 end
 
---[[ --deciding if best to split of to float
-function M.monitor()
-    local serial_command = string.format("arduino-cli monitor -p %s -c %s", M.port, M.baudrate)
-    vim.cmd("belowright split | terminal " .. serial_command)
-    local term_bufnr = vim.api.nvim_get_current_buf()
-    vim.api.nvim_buf_set_keymap(term_bufnr, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
-    vim.api.nvim_buf_set_keymap(term_bufnr, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
-
-end
-]]--
 function M.monitor()
     local serial_command = string.format("arduino-cli monitor -p %s -c %s", M.port, M.baudrate)
 
@@ -412,6 +404,13 @@ function M.monitor()
     vim.api.nvim_buf_set_keymap(buf, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
     vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
 end
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "arduino",
+    callback = function()
+        require("Arduino-Nvim.lsp").setup()
+    end
+})
 
 vim.api.nvim_create_user_command("InoSetCom", function(opts) M.set_com(opts.args) end, { nargs = 1 })
 vim.api.nvim_create_user_command("InoSetBoard", function(opts) M.set_board(opts.args) end, { nargs = 1 })

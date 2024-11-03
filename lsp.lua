@@ -1,5 +1,5 @@
 -- Path to the configuration file where board and port are saved
-local config_file = vim.fn.stdpath('config') .. '/arduino_config.lua'
+local config_file = '.arduino_config.lua'
 
 -- Load configuration function
 local function load_arduino_config()
@@ -8,11 +8,7 @@ local function load_arduino_config()
         local ok, settings = pcall(config)
         if ok and settings then
             return settings
-        else
-            vim.notify("Error loading Arduino config file.", vim.log.levels.ERROR)
         end
-    else
-        vim.notify("Arduino config file not found. Using default settings.", vim.log.levels.WARN)
     end
     -- Fallback defaults if config loading fails
     return {
@@ -21,19 +17,59 @@ local function load_arduino_config()
     }
 end
 
+-- Check or create sketch.yaml with correct fqbn and port
+local function check_or_create_sketch_yaml(settings)
+    local yaml_file = "sketch.yaml"
+
+    -- Load current config for board and port
+    local board = settings.board
+    local port = settings.port
+
+    -- Check if sketch.yaml exists
+    if vim.fn.filereadable(yaml_file) == 0 then
+        -- If not, create sketch.yaml with default settings
+        vim.notify("sketch.yaml not found. Creating with default settings.", vim.log.levels.INFO)
+        local file = io.open(yaml_file, "w")
+        if file then
+            file:write("fqbn: " .. board .. "\n")
+            file:write("port: " .. port .. "\n")
+            file:close()
+        end
+    else
+        -- Read existing file and check if fqbn and port match the config
+        local current_yaml = {}
+        for line in io.lines(yaml_file) do
+            local key, value = line:match("(%S+):%s*(%S+)")
+            if key and value then
+                current_yaml[key] = value
+            end
+        end
+
+        -- Update fqbn or port if they differ from config
+        if current_yaml["fqbn"] ~= board or current_yaml["port"] ~= port then
+            vim.notify("Updating fqbn or port in sketch.yaml to match config.", vim.log.levels.INFO)
+            local file = io.open(yaml_file, "w")
+            file:write("fqbn: " .. board .. "\n")
+            file:write("port: " .. port .. "\n")
+            file:close()
+        end
+    end
+end
+
+
 -- Set up the Arduino language server with saved configuration
 local function setup_arduino_lsp()
     -- Load board configuration
     local settings = load_arduino_config()
+    check_or_create_sketch_yaml(settings)
     local board = settings.board or "arduino:avr:uno" -- Default fallback
-
     -- Configure the Arduino language server using loaded settings
     require('lspconfig').arduino_language_server.setup {
         cmd = {
-            "arduino-language-server", -- Replace with the path of your manually installed binary
+            "arduino-language-server",
             "-cli", "arduino-cli",
             "-cli-config", "/home/edin/.arduino15/arduino-cli.yaml",
-            "-fqbn", "arduino:avr:nano",
+            "-fqbn", board,
             "-clangd", "/usr/bin/clangd",
             "-log"
         },
@@ -48,25 +84,11 @@ local function setup_arduino_lsp()
     }
 end
 
+-- Autocommand to initialize Arduino LSP on Arduino files
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "arduino",
-    callback = function()
-        require("lspconfig").arduino_language_server.setup {
-            cmd = {
-                "arduino-language-server",
-                "-cli", "arduino-cli",
-                "-cli-config", "/home/edin/.arduino15/arduino-cli.yaml",
-                "-fqbn", "arduino:avr:nano",
-                "-clangd", "/usr/bin/clangd"
-            },
-            filetypes = { "arduino", "cpp" },
-            root_dir = function(fname)
-                return require('lspconfig').util.root_pattern("sketch.yaml", ".git")(fname) or vim.loop.cwd()
-            end,
-        }
-    end
+    callback = setup_arduino_lsp
 })
-
 
 -- Export the setup function
 return {

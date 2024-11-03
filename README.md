@@ -5,8 +5,7 @@ I've made this plugin to replicate the functionnality of [Arduino IDE](https://w
 ## Requirements
 
 - arduino-cli
-- arduino-language-server (needs lsp.go lib to me modified : https://github.com/arduino/arduino-language-server/issues/187#issuecomment-2241641098)
-- clangd
+- kitty
 
 ## Installation
 
@@ -29,12 +28,10 @@ Next letter is the first letter of the tool you wanna use.
 `<leader> a`:
 - c: compile and check
 - u: upload to set port and fqbn
-- m: opens a floating serial monitor for the current board with write functionnality
+- m: opens a new kitty terminal with the monitor
 - s: shows the current status for board, port and fqbn
 - l: opens a gui library manager (built around telescope)
-- p: displays available ports with boards connected
-
-All floating windows can be closed with 'Enter' or 'Escape'.
+- p: displays available ports
 
 Baudrate has to be set manually for now with
 ```

@@ -1,6 +1,6 @@
 require("Arduino-Nvim.remap")
 require("Arduino-Nvim.libGetter")
-require("Arduino-Nvim.lsp")
+require("Arduino-Nvim.lsp").setup()
 
 
 local M = {}
@@ -408,12 +408,11 @@ end
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "arduino",
     callback = function()
-        require("Arduino-Nvim.lsp").setup()
     end
 })
 
-vim.api.nvim_create_user_command("InoSetCom", function(opts) M.set_com(opts.args) end, { nargs = 1 })
-vim.api.nvim_create_user_command("InoSetBoard", function(opts) M.set_board(opts.args) end, { nargs = 1 })
+vim.api.nvim_create_user_command("InoSelectBoard", function() M.select_board_gui() end, { })
+vim.api.nvim_create_user_command("InoSelectPort", function() M.select_port_gui() end, {})
 vim.api.nvim_create_user_command("InoCheck", function() M.check() end, {})
 vim.api.nvim_create_user_command("InoUpload", function() M.upload() end, {})
 vim.api.nvim_create_user_command("InoGUI", function() M.gui() end, {})

@@ -69,9 +69,8 @@ local function setup_arduino_lsp()
             "arduino-language-server",
             "-cli", "arduino-cli",
             "-cli-config", "/home/edin/.arduino15/arduino-cli.yaml",
-            "-fqbn", board,
             "-clangd", "/usr/bin/clangd",
-            "-log"
+            "-fqbn", board,
         },
         filetypes = { "arduino", "cpp" },
         root_dir = function(fname)
@@ -83,12 +82,6 @@ local function setup_arduino_lsp()
         }
     }
 end
-
--- Autocommand to initialize Arduino LSP on Arduino files
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = "arduino",
-    callback = setup_arduino_lsp
-})
 
 -- Export the setup function
 return {

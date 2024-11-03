@@ -28,6 +28,7 @@ function M.save_config()
         file:write(string.format("  baudrate = %q,\n", M.baudrate))
         file:write("}\n")
         file:close()
+        os.execute("arduino-cli board attach -p " .. M.port .. "-b " .. M.board " " .. vim.api.nvim_buf_get_name(0) )
     else
         vim.notify("Error: Cannot write to config file.", vim.log.levels.ERROR)
     end

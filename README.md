@@ -29,10 +29,12 @@ Next letter is the first letter of the tool you wanna use.
 `<leader> a`:
 - c: compile and check
 - u: upload to set port and fqbn
-- m: opens a new kitty terminal with the monitor
+- m: opens a floating serial monitor for the current board with write functionnality
 - s: shows the current status for board, port and fqbn
 - l: opens a gui library manager (built around telescope)
-- p: displays available ports
+- p: displays available ports with boards connected
+
+All floating windows can be closed with 'Enter' or 'Escape'.
 
 Baudrate has to be set manually for now with
 ```

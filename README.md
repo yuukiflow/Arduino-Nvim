@@ -1,6 +1,3 @@
-# CURRENT STATE = BROKEN
-trying to implement the lsp broke some things, working on it
-
 # An arduino IDE for neovim
 
 I've made this plugin to replicate the functionnality of [Arduino IDE](https://www.arduino.cc/en/Software/ArduinoIDE) in neovim. It's a work in progress and I'm open to any feedback.
@@ -8,8 +5,10 @@ I've made this plugin to replicate the functionnality of [Arduino IDE](https://w
 ## Requirements
 
 - arduino-cli
+- arduino-language-server (needs a patched version : [Patch](https://github.com/arduino/arduino-language-server/issues/187#issuecomment-2241641098))
 - clangd
 - telescope
+- lspconfig
 
 ## Installation
 
@@ -36,6 +35,8 @@ Next letter is the first letter of the tool you wanna use.
 - s: shows the current status for board, port and fqbn
 - l: opens a gui library manager (built around telescope)
 - p: displays available ports
+- b: displays available boards
+
 
 Baudrate has to be set manually for now with
 ```

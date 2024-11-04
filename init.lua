@@ -1,6 +1,5 @@
 require("Arduino-Nvim.remap")
 require("Arduino-Nvim.libGetter")
-require("Arduino-Nvim.lsp").setup()
 
 
 local M = {}
@@ -404,12 +403,6 @@ function M.monitor()
     vim.api.nvim_buf_set_keymap(buf, 't', '<C-c>', '<C-\\><C-n>:bd!<CR>', { noremap = true, silent = true })
     vim.api.nvim_buf_set_keymap(buf, 'n', '<C-c>', ':bd!<CR>', { noremap = true, silent = true })
 end
-
-vim.api.nvim_create_autocmd("FileType", {
-    pattern = "arduino",
-    callback = function()
-    end
-})
 
 vim.api.nvim_create_user_command("InoSelectBoard", function() M.select_board_gui() end, { })
 vim.api.nvim_create_user_command("InoSelectPort", function() M.select_port_gui() end, {})

@@ -20,7 +20,11 @@ end
 -- Check or create sketch.yaml with correct fqbn and port
 local function check_or_create_sketch_yaml(settings)
     local yaml_file = "sketch.yaml"
-
+    local ino_files = vim.fn.glob('*.ino', false, true)
+    if #ino_files == 0 then
+        -- No .ino files found, do not proceed
+        return
+    end
     -- Load current config for board and port
     local board = settings.board
     local port = settings.port
@@ -46,11 +50,11 @@ local function check_or_create_sketch_yaml(settings)
         end
 
         -- Update fqbn or port if they differ from config
-        if current_yaml["fqbn"] ~= board or current_yaml["port"] ~= port then
+        if current_yaml["default_fqbn"] ~= board or current_yaml["default_port"] ~= port then
             vim.notify("Updating fqbn or port in sketch.yaml to match config.", vim.log.levels.INFO)
             local file = io.open(yaml_file, "w")
-            file:write("fqbn: " .. board .. "\n")
-            file:write("port: " .. port .. "\n")
+            file:write("default_fqbn: " .. board .. "\n")
+            file:write("default_port: " .. port .. "\n")
             file:close()
         end
     end
@@ -68,17 +72,15 @@ local function setup_arduino_lsp()
         cmd = {
             "arduino-language-server",
             "-cli", "arduino-cli",
-            "-cli-config", "/home/edin/.arduino15/arduino-cli.yaml",
+            "-cli-config", "$HOME/.arduino15/arduino-cli.yaml",
             "-clangd", "/usr/bin/clangd",
             "-fqbn", board,
         },
         filetypes = { "arduino", "cpp" },
         root_dir = function(fname)
-            return require('lspconfig').util.root_pattern("sketch.yaml", ".git")(fname) or vim.loop.cwd()
+            return vim.loop.cwd()
         end,
         handlers = {
-            ["window/logMessage"] = function() end, -- Suppress extraneous logs
-            ["window/showMessage"] = function() end
         }
     }
 end

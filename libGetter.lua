@@ -57,14 +57,23 @@ local function get_installed_libraries()
     local ok, installed_data = pcall(json.decode, result)
     local installed_libs = {}
 
-    if ok and installed_data and installed_data.installed_libraries then
+    -- Debug output to inspect the structure of `installed_data`
+    if not ok then
+        print("Error decoding JSON for installed libraries.")
+    elseif not installed_data or not installed_data.installed_libraries then
+        print("Unexpected JSON structure for installed libraries:")
+        print(vim.inspect(installed_data))
+    else
+        print("Loaded installed libraries successfully.")
+        -- Loop through the `installed_libraries` array, accessing the `library` details inside each entry
         for _, entry in ipairs(installed_data.installed_libraries) do
             if entry.library and entry.library.name then
                 installed_libs[entry.library.name] = entry.library.version  -- Store version for comparison
+            else
+                print("Warning: Missing library name or version for entry:")
+                print(vim.inspect(entry))
             end
         end
-    else
-        print("Failed to fetch installed libraries.")
     end
 
     return installed_libs
@@ -198,13 +207,6 @@ function M.library_manager()
     end
 end
 
--- Run library fetch on startup only if cache is expired
---[[ vim.api.nvim_create_autocmd("BufReadPost", {
-    pattern = "*.ino",
-    callback = function()
-        load_libraries_from_cache()
-    end,
-})]]
 
 -- Create Neovim command to open the library manager
 vim.api.nvim_create_user_command("InoLib", function() M.library_manager() end, {})

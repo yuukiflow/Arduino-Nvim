@@ -16,10 +16,19 @@ I've made this plugin to replicate the functionnality of [Arduino IDE](https://w
 git clone https://github.com/yuukiflow/Arduino-Nvim.git ~/.config/nvim/lua/Arduino-Nvim
 ```
 
-in your init.lua
+in your init.lua file :
+if you don't load the lsp plugin in the main init file, it won't attach to buffers
 
 ```lua
-require("arduino-nvim")
+require("Arduino-Nvim.lsp").setup()
+
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "arduino",
+    callback = function()
+            require("Arduino-Nvim")
+    end
+})
 ```
 
 ## Usage

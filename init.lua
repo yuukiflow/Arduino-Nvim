@@ -155,7 +155,7 @@ function M.check()
                     end
                 end
                 if #error_lines > 0 then
-                    M.append_to_buffer(error_lines)
+                    M.append_to_buffer(error_lines, buf, win, opts)
                 end
             end
         end,
@@ -221,14 +221,18 @@ function M.upload()
                 end
             end,
             on_stderr = function(_, data)
-                if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
+                if data then
                     M.append_to_buffer(vim.tbl_map(function(line)
                         return "Error: " .. line
                     end, data), buf, win, opts)
                 end
             end,
-            on_exit = function()
-                M.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
+            on_exit = function(_, exit_code)
+                if exit_code == 0 then
+                    M.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
+                else
+                    M.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
+                end
             end,
         })
     end

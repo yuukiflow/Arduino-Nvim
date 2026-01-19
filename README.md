@@ -94,7 +94,7 @@ All commands are prefixed with `<Leader>a` followed by a single letter:
 |---------|-------------|
 | `:InoDebugUpload` | Debug upload process with detailed information |
 | `:InoList` | List all available Arduino ports |
-| `:InoSetBaud <rate>` | Set serial monitor baudrate (e.g. `:InoSetBaud 9600`) |
+| `:InoSetBaud <rate>` | Set serial monitor baudrate (e.g. `:InoSetBaud 115200`) |
 
 ## ⚙️ Configuration
 
@@ -111,7 +111,7 @@ project directory to store:
 return {
   board = "arduino:renesas_uno:unor4wifi",
   port = "/dev/ttyACM0", 
-  baudrate = "9600",
+  baudrate = "115200",
 }
 ```
 

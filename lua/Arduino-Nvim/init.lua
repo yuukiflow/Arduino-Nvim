@@ -541,7 +541,7 @@ function M.monitor()
 				{ "", "Starting monitor...", "Press CTRL-C or Esc to exit.", "" }
 			)
 
-			local serial_command = string.format("arduino-cli monitor -p %s -b %s", M.port, M.board)
+			local serial_command = string.format("arduino-cli monitor -p %s -b %s --config baudrate=%s", M.port, M.board, M.baudrate)
 
 			-- Create a new buffer for the terminal
 			local term_buf = vim.api.nvim_create_buf(false, true)

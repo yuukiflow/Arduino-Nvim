@@ -308,6 +308,92 @@ function M.upload()
 	})
 end
 
+function M.upload_and_monitor()
+	-- Check if arduino-cli is available
+	if not check_arduino_cli() then
+		return
+	end
+
+	-- Check if board and port are configured
+	if M.board == "" then
+		vim.notify("No board selected. Please run :InoBoard first.", vim.log.levels.WARN)
+		return
+	end
+
+	if M.port == "" then
+		vim.notify("No port selected. Please run :InoPort first.", vim.log.levels.WARN)
+		return
+	end
+
+	local buf, win, opts = M.create_floating_cli_monitor()
+	M.append_to_buffer({ "--- Starting Compilation ---" }, buf, win, opts)
+
+	local compile_cmd = "arduino-cli compile --fqbn "
+		.. M.board
+		.. " "
+		.. vim.fn.expand("%:p:h")
+		.. " 2>&1"
+
+	local function start_upload()
+		M.append_to_buffer({ "--- Starting Upload ---" }, buf, win, opts)
+		local upload_cmd = "arduino-cli upload -p "
+			.. M.port
+			.. " --fqbn "
+			.. M.board
+			.. " --verify "
+			.. vim.fn.expand("%:p:h")
+			.. " 2>&1"
+
+		vim.fn.jobstart(upload_cmd, {
+			on_stdout = function(_, data, _)
+				if data and #data > 0 then
+					M.append_to_buffer(data, buf, win, opts)
+				end
+			end,
+			on_stderr = function(_, data, _)
+				if data and #data > 0 then
+					M.append_to_buffer(data, buf, win, opts)
+				end
+			end,
+			on_exit = function(_, exit_code, _)
+				if exit_code == 0 then
+					M.append_to_buffer({ "--- Upload Complete, Starting Monitor ---" }, buf, win, opts)
+					-- Close the upload window after a brief delay, then start monitor
+					vim.defer_fn(function()
+						if vim.api.nvim_win_is_valid(win) then
+							vim.api.nvim_win_close(win, true)
+						end
+						M.monitor()
+					end, 1000)
+				else
+					M.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
+				end
+			end,
+		})
+	end
+
+	vim.fn.jobstart(compile_cmd, {
+		on_stdout = function(_, data, _)
+			if data and #data > 0 then
+				M.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_stderr = function(_, data, _)
+			if data and #data > 0 then
+				M.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_exit = function(_, exit_code, _)
+			if exit_code == 0 then
+				M.append_to_buffer({ "--- Compilation Complete, Starting Upload ---" }, buf, win, opts)
+				start_upload()
+			else
+				M.append_to_buffer({ "--- Compilation Failed ---" }, buf, win, opts)
+			end
+		end,
+	})
+end
+
 function M.select_board_gui(callback)
 	-- Check if arduino-cli is available
 	if not check_arduino_cli() then
@@ -612,6 +698,9 @@ vim.api.nvim_create_user_command("InoSetBaud", function(opts)
 end, { nargs = 1 })
 vim.api.nvim_create_user_command("InoUpload", function()
 	M.upload()
+end, {})
+vim.api.nvim_create_user_command("InoWatchUpload", function()
+	M.upload_and_monitor()
 end, {})
 vim.api.nvim_create_user_command("InoUploadSlow", function()
 	M.baudrate = "1200"

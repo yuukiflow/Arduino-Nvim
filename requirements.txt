@@ -1,0 +1,4 @@
+# Python dependencies for Arduino-Nvim ESP8266 LittleFS upload
+# These are automatically installed via uv when using :InoDataUpload
+
+pyserial>=3.5

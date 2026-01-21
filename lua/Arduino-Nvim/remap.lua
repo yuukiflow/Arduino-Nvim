@@ -8,6 +8,7 @@ vim.keymap.set("n", "<Leader>ab", ":InoSelectBoard<CR>", { silent = true })     
 vim.keymap.set("n", "<Leader>ap", ":InoSelectPort<CR>", { silent = true }) -- open board selection gui
 vim.keymap.set("n", "<Leader>ar", ":InoUploadReset<CR>", { silent = true }) -- Upload with manual reset for UNO R4 WiFi
 vim.keymap.set("n", "<Leader>aw", ":InoWatchUpload<CR>", { silent = true }) -- Upload and monitor serial output
+vim.keymap.set("n", "<Leader>ad", ":InoDataUpload<CR>", { silent = true }) -- Upload LittleFS data to ESP8266
 
 
 vim.keymap.set("n", "<Esc>", function()

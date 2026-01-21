@@ -4,6 +4,72 @@ local M = {}
 require("Arduino-Nvim.remap")
 require("Arduino-Nvim.libGetter")
 
+-- Plugin data directory for virtual environment
+local PLUGIN_DATA_DIR = vim.fn.stdpath("data") .. "/arduino-nvim"
+local VENV_DIR = PLUGIN_DATA_DIR .. "/venv"
+
+-- Get the plugin's root directory (where requirements.txt lives)
+local function get_plugin_root()
+	local source = debug.getinfo(1, "S").source:sub(2) -- Remove @ prefix
+	-- source is .../lua/Arduino-Nvim/init.lua, go up 3 levels
+	return vim.fn.fnamemodify(source, ":h:h:h")
+end
+
+-- Setup Python virtual environment with dependencies (runs async on plugin load)
+local function setup_python_venv()
+	local uv_path = vim.fn.exepath("uv")
+	if not uv_path or uv_path == "" then
+		-- uv not installed, skip setup silently (will warn when actually needed)
+		return
+	end
+
+	local venv_python = VENV_DIR .. "/bin/python"
+	local plugin_root = get_plugin_root()
+	local requirements_file = plugin_root .. "/requirements.txt"
+
+	-- Check if venv already exists and has pyserial
+	if vim.fn.filereadable(venv_python) == 1 then
+		local check = io.popen(venv_python .. " -c 'import serial' 2>&1")
+		if check then
+			local result = check:read("*a")
+			check:close()
+			if not result:match("ModuleNotFoundError") then
+				return -- Already set up
+			end
+		end
+	end
+
+	-- Create plugin data directory if needed
+	if vim.fn.isdirectory(PLUGIN_DATA_DIR) == 0 then
+		vim.fn.mkdir(PLUGIN_DATA_DIR, "p")
+	end
+
+	-- Run venv setup asynchronously to not block Neovim startup
+	vim.fn.jobstart(uv_path .. " venv " .. VENV_DIR, {
+		on_exit = function(_, exit_code)
+			if exit_code == 0 then
+				-- Install dependencies from requirements.txt
+				local install_cmd
+				if vim.fn.filereadable(requirements_file) == 1 then
+					install_cmd = string.format("%s pip install --python %s -r %s", uv_path, venv_python, requirements_file)
+				else
+					install_cmd = string.format("%s pip install --python %s pyserial", uv_path, venv_python)
+				end
+				vim.fn.jobstart(install_cmd, {
+					on_exit = function(_, install_exit_code)
+						if install_exit_code == 0 then
+							vim.notify("Arduino-Nvim: Python environment ready", vim.log.levels.INFO)
+						end
+					end,
+				})
+			end
+		end,
+	})
+end
+
+-- Setup venv on plugin load
+setup_python_venv()
+
 -- Default settings
 M.board = "arduino:avr:uno"
 M.port = "/dev/ttyUSB0"
@@ -820,6 +886,215 @@ vim.api.nvim_create_user_command("InoStatus", function()
 end, {})
 vim.api.nvim_create_user_command("InoList", function()
 	M.InoList()
+end, {})
+
+-- ============================================================================
+-- LittleFS Data Upload for ESP8266
+-- ============================================================================
+
+-- ESP8266 LittleFS configuration for 4M2M (4MB flash, 2MB filesystem)
+local ESP8266_LITTLEFS_CONFIG = {
+	fs_start = 0x200000, -- 2MB offset
+	fs_end = 0x3FA000, -- End address
+	fs_size = 0x1FA000, -- ~2MB filesystem size
+	fs_page = 256, -- Page size
+	fs_block = 8192, -- Block size
+	baud = 460800, -- Upload baud rate
+}
+
+-- Get venv python path (venv is set up on plugin load)
+local function get_venv_python()
+	local venv_python = VENV_DIR .. "/bin/python"
+
+	-- Check if venv exists and has pyserial
+	if vim.fn.filereadable(venv_python) == 1 then
+		local check = io.popen(venv_python .. " -c 'import serial' 2>&1")
+		if check then
+			local result = check:read("*a")
+			check:close()
+			if not result:match("ModuleNotFoundError") then
+				return venv_python, nil
+			end
+		end
+	end
+
+	return nil, "Python environment not ready. Restart Neovim or install uv: https://docs.astral.sh/uv/"
+end
+
+-- Function to find ESP8266 tools in Arduino15 directory
+local function find_esp8266_tools()
+	local arduino15 = vim.fn.expand("$HOME/Library/Arduino15")
+	local esp8266_base = arduino15 .. "/packages/esp8266"
+
+	local tools = {
+		mklittlefs = nil,
+		esptool = nil,
+		python3 = nil,
+	}
+
+	-- Find mklittlefs (in tools/mklittlefs/*/mklittlefs)
+	local mklittlefs_dir = esp8266_base .. "/tools/mklittlefs"
+	local handle = io.popen("ls -1 " .. mklittlefs_dir .. " 2>/dev/null | head -1")
+	if handle then
+		local version = handle:read("*l")
+		handle:close()
+		if version and version ~= "" then
+			tools.mklittlefs = mklittlefs_dir .. "/" .. version .. "/mklittlefs"
+		end
+	end
+
+	-- Find esptool.py (in hardware/esp8266/*/tools/esptool/esptool.py)
+	local hw_dir = esp8266_base .. "/hardware/esp8266"
+	handle = io.popen("ls -1 " .. hw_dir .. " 2>/dev/null | head -1")
+	if handle then
+		local version = handle:read("*l")
+		handle:close()
+		if version and version ~= "" then
+			tools.esptool = hw_dir .. "/" .. version .. "/tools/esptool/esptool.py"
+		end
+	end
+
+	-- Use uv-managed venv with pyserial (set up on plugin load)
+	local venv_python, err = get_venv_python()
+	if venv_python then
+		tools.python3 = venv_python
+	else
+		-- Log error but don't fail yet - will be caught later
+		vim.notify("Arduino-Nvim: " .. (err or "Failed to setup Python environment"), vim.log.levels.WARN)
+	end
+
+	return tools
+end
+
+-- Upload LittleFS data directory to ESP8266
+function M.upload_data()
+	-- Check if this is an ESP8266 board
+	if not M.board:match("^esp8266:") then
+		vim.notify("LittleFS upload is only supported for ESP8266 boards", vim.log.levels.ERROR)
+		return
+	end
+
+	-- Check if data/ directory exists
+	local sketch_dir = vim.fn.expand("%:p:h")
+	local data_dir = sketch_dir .. "/data"
+
+	if vim.fn.isdirectory(data_dir) == 0 then
+		vim.notify("No 'data' directory found in sketch folder: " .. sketch_dir, vim.log.levels.ERROR)
+		return
+	end
+
+	-- Find ESP8266 tools
+	local tools = find_esp8266_tools()
+
+	if not tools.mklittlefs or vim.fn.filereadable(tools.mklittlefs) == 0 then
+		vim.notify("mklittlefs tool not found. Please install ESP8266 board package.", vim.log.levels.ERROR)
+		return
+	end
+
+	if not tools.esptool or vim.fn.filereadable(tools.esptool) == 0 then
+		vim.notify("esptool.py not found. Please install ESP8266 board package.", vim.log.levels.ERROR)
+		return
+	end
+
+	if not tools.python3 or vim.fn.filereadable(tools.python3) == 0 then
+		vim.notify("python3 not found. Please install ESP8266 board package.", vim.log.levels.ERROR)
+		return
+	end
+
+	-- Create output window
+	local buf, win, opts = M.create_floating_cli_monitor()
+
+	-- Create temporary file for LittleFS image
+	local littlefs_image = "/tmp/littlefs.bin"
+
+	-- Step 1: Create LittleFS image
+	M.append_to_buffer({ "--- Creating LittleFS image ---" }, buf, win, opts)
+	M.append_to_buffer({ "Data directory: " .. data_dir }, buf, win, opts)
+
+	local config = ESP8266_LITTLEFS_CONFIG
+	local mklittlefs_cmd = string.format(
+		"%s -c %s -s %d -p %d -b %d %s",
+		tools.mklittlefs,
+		data_dir,
+		config.fs_size,
+		config.fs_page,
+		config.fs_block,
+		littlefs_image
+	)
+
+	M.append_to_buffer({ "Running: mklittlefs -c data -s " .. config.fs_size .. " ..." }, buf, win, opts)
+
+	vim.fn.jobstart(mklittlefs_cmd, {
+		stdout_buffered = false,
+		on_stdout = function(_, data)
+			if data then
+				M.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_stderr = function(_, data)
+			if data and #data > 0 and data[1]:match("%S") then
+				M.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_exit = function(_, exit_code)
+			if exit_code ~= 0 then
+				M.append_to_buffer({ "--- Failed to create LittleFS image ---" }, buf, win, opts)
+				return
+			end
+
+			-- Get file size
+			local stat = vim.loop.fs_stat(littlefs_image)
+			local size_kb = stat and math.floor(stat.size / 1024) or 0
+			M.append_to_buffer({ "LittleFS image created: " .. size_kb .. " KB" }, buf, win, opts)
+
+			-- Step 2: Upload LittleFS image using esptool
+			M.append_to_buffer({ "", "--- Uploading LittleFS image to ESP8266 ---" }, buf, win, opts)
+			M.append_to_buffer({ "Port: " .. M.port }, buf, win, opts)
+			M.append_to_buffer({ "Flash address: 0x" .. string.format("%X", config.fs_start) }, buf, win, opts)
+
+			local esptool_cmd = string.format(
+				"%s %s --chip esp8266 --port %s --baud %d write_flash 0x%X %s",
+				tools.python3,
+				tools.esptool,
+				M.port,
+				config.baud,
+				config.fs_start,
+				littlefs_image
+			)
+
+			vim.fn.jobstart(esptool_cmd, {
+				stdout_buffered = false,
+				on_stdout = function(_, data2)
+					if data2 then
+						M.append_to_buffer(data2, buf, win, opts)
+					end
+				end,
+				on_stderr = function(_, data2)
+					if data2 and #data2 > 0 and data2[1]:match("%S") then
+						M.append_to_buffer(data2, buf, win, opts)
+					end
+				end,
+				on_exit = function(_, exit_code2)
+					if exit_code2 == 0 then
+						M.append_to_buffer({ "", "--- LittleFS Upload Complete ---" }, buf, win, opts)
+						M.append_to_buffer({ "Files uploaded successfully to ESP8266 filesystem." }, buf, win, opts)
+					else
+						M.append_to_buffer({ "", "--- LittleFS Upload Failed ---" }, buf, win, opts)
+						M.append_to_buffer({
+							"Hint: Check port connection and try :InoSelectPort",
+						}, buf, win, opts)
+					end
+
+					-- Clean up temp file
+					os.remove(littlefs_image)
+				end,
+			})
+		end,
+	})
+end
+
+vim.api.nvim_create_user_command("InoDataUpload", function()
+	M.upload_data()
 end, {})
 
 return M

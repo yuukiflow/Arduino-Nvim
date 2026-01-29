@@ -257,6 +257,69 @@ function M.check()
 	})
 end
 
+-- Function to compile code and output binaries to ./bin directory
+function M.compile()
+	-- Check if arduino-cli is available
+	if not check_arduino_cli() then
+		return
+	end
+
+	-- Get sketch directory
+	local sketch_dir = vim.fn.expand("%:p:h")
+	local bin_dir = sketch_dir .. "/bin"
+
+	-- Create bin directory if it doesn't exist
+	if vim.fn.isdirectory(bin_dir) == 0 then
+		vim.fn.mkdir(bin_dir, "p")
+	end
+
+	-- Create the output window buffer and window
+	local buf, win, opts = M.create_floating_cli_monitor()
+
+	M.append_to_buffer({ "--- Compiling sketch ---" }, buf, win, opts)
+	M.append_to_buffer({ "Output directory: " .. bin_dir }, buf, win, opts)
+
+	-- Command to compile with output directory
+	local cmd = string.format(
+		"arduino-cli compile --fqbn %s --output-dir %s %s",
+		M.board,
+		bin_dir,
+		sketch_dir
+	)
+
+	-- Run the command asynchronously
+	vim.fn.jobstart(cmd, {
+		stdout_buffered = false,
+		on_stdout = function(_, data)
+			if data then
+				M.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_stderr = function(_, data)
+			-- Only append lines that contain actual content to avoid false errors
+			if data then
+				local error_lines = {}
+				for _, line in ipairs(data) do
+					local cleaned_line = strip_ansi_codes(line)
+					if cleaned_line:match("%S") then -- Only consider non-empty, non-whitespace lines
+						table.insert(error_lines, "Error: " .. cleaned_line)
+					end
+				end
+				if #error_lines > 0 then
+					M.append_to_buffer(error_lines, buf, win, opts)
+				end
+			end
+		end,
+		on_exit = function(_, exit_code)
+			if exit_code == 0 then
+				M.append_to_buffer({ "--- Compilation complete. Binaries saved to ./bin ---" }, buf, win, opts)
+			else
+				M.append_to_buffer({ "--- Compilation failed. ---" }, buf, win, opts)
+			end
+		end,
+	})
+end
+
 -- Helper function to split a string by newlines
 local function split_string_by_newlines(input)
 	local result = {}
@@ -752,6 +815,9 @@ vim.api.nvim_create_user_command("InoSelectPort", function()
 end, {})
 vim.api.nvim_create_user_command("InoCheck", function()
 	M.check()
+end, {})
+vim.api.nvim_create_user_command("InoCompile", function()
+	M.compile()
 end, {})
 vim.api.nvim_create_user_command("InoGUI", function()
 	M.gui()

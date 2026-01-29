@@ -96,6 +96,7 @@ All commands are prefixed with `<Leader>a` followed by a single letter:
 
 | Command | Description |
 |---------|-------------|
+| `:InoCompile` | Compile sketch and export binaries to `./bin` directory |
 | `:InoDebugUpload` | Debug upload process with detailed information |
 | `:InoWatchUpload` | Compile, upload, and automatically open serial monitor |
 | `:InoDataUpload` | Upload `data/` directory to ESP8266 LittleFS filesystem |
@@ -165,6 +166,10 @@ The plugin includes LSP configuration for Arduino development:
 sketch/
 ├── sketch.ino               # Main Arduino sketch
 ├── .arduino_config.lua      # Plugin configuration (auto-generated)
+├── bin/                     # Compiled binaries (from :InoCompile)
+│   ├── sketch.ino.hex       # Intel HEX format
+│   ├── sketch.ino.elf       # ELF executable
+│   └── sketch.ino.bin       # Raw binary
 ├── data/                    # LittleFS filesystem directory (ESP8266)
 │   ├── index.html           # Web files to upload
 │   └── assets/              # Static assets (JS, CSS, images)

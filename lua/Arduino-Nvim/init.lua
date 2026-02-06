@@ -549,7 +549,7 @@ function M.monitor()
 
 			-- Start the actual monitor in the new buffer
 			vim.fn.termopen(serial_command, {
-				cwd = vim.fn.fnameescape(vim.fn.expand("%:p:h")),
+				cwd = vim.fn.shellescape(vim.fn.expand("%:p:h")),
 				on_exit = function(_, exit_code)
 					if exit_code ~= 0 and vim.api.nvim_buf_is_valid(term_buf) then
 						vim.api.nvim_buf_set_lines(

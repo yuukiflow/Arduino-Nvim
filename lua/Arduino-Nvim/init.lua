@@ -469,7 +469,7 @@ function M.gui()
 			local result = handle:read("*a")
 			handle:close()
 			-- Check if any ports are listed
-			if result:match("^/dev/tty") or result:match("^COM") then
+			if result:match("/dev/tty") or result:match("COM") then
 				M.select_port_gui()
 			else
 				vim.notify("No Arduino boards connected. Skipping port selection.", vim.log.levels.INFO)

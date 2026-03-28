@@ -156,7 +156,7 @@ function M.check()
 	local buf, win, opts = M.create_floating_cli_monitor()
 
 	-- Command to compile in the current directory
-	local cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
+	local cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.fnameescape(vim.fn.expand("%:p:h"))
 
 	-- Run the command asynchronously
 	vim.fn.jobstart(cmd, {
@@ -232,7 +232,7 @@ function M.upload()
 	local buf, win, opts = M.create_floating_cli_monitor()
 
 	-- Commands for compiling and uploading
-	local compile_cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
+	local compile_cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.fnameescape(vim.fn.expand("%:p:h"))
 
 	-- For UNO R4 WiFi, try using arduino-cli's built-in reset handling
 	local upload_cmd = "arduino-cli upload -p "
@@ -240,7 +240,7 @@ function M.upload()
 		.. " --fqbn "
 		.. M.board
 		.. " --verify "
-		.. vim.fn.expand("%:p:h")
+		.. vim.fn.fnameescape(vim.fn.expand("%:p:h"))
 
 	-- Function to start upload after successful compilation
 	local function start_upload()
@@ -631,7 +631,7 @@ vim.api.nvim_create_user_command("InoUploadReset", function()
 	-- Wait a moment for reset
 	vim.defer_fn(function()
 		-- Try upload after reset
-		local upload_cmd = "arduino-cli upload -p " .. M.port .. " --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
+		local upload_cmd = "arduino-cli upload -p " .. M.port .. " --fqbn " .. M.board .. " " .. vim.fn.fnameescape(vim.fn.expand("%:p:h"))
 		M.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
 
 		vim.fn.jobstart(upload_cmd, {
@@ -706,7 +706,7 @@ vim.api.nvim_create_user_command("InoDebugUpload", function()
 						.. " --fqbn "
 						.. M.board
 						.. " --verbose "
-						.. vim.fn.expand("%:p:h")
+						.. vim.fn.fnameescape(vim.fn.expand("%:p:h"))
 					vim.fn.jobstart(verbose_cmd, {
 						stdout_buffered = false,
 						on_stdout = function(_, data)

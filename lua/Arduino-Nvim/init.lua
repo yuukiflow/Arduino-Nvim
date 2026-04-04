@@ -308,7 +308,7 @@ function M.upload()
 	})
 end
 
-function M.select_board_gui(callback)
+function M.get_boards()
 	-- Check if arduino-cli is available
 	if not check_arduino_cli() then
 		return
@@ -356,6 +356,16 @@ function M.select_board_gui(callback)
 		return
 	end
 
+  return boards
+end
+
+function M.select_board_gui(callback)
+  -- call get_boards to get a list of boards
+  local boards = M.get_boards()
+  if #boards == 0 then
+    return
+  end
+
 	require("telescope.pickers")
 		.new({}, {
 			prompt_title = "Select Arduino Board",
@@ -393,7 +403,7 @@ function M.select_board_gui(callback)
 		:find()
 end
 
-function M.select_port_gui()
+function M.get_ports()
 	-- Check if arduino-cli is available
 	if not check_arduino_cli() then
 		return
@@ -421,6 +431,15 @@ function M.select_port_gui()
 		vim.notify("No connected COM ports found.", vim.log.levels.ERROR)
 		return
 	end
+
+  return ports
+end
+
+function M.select_port_gui()
+  local ports = M.get_ports()
+  if #ports == 0 then
+    return
+  end
 
 	-- Use Telescope to display the list of available ports
 	require("telescope.pickers")

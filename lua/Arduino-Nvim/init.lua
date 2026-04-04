@@ -1,5 +1,6 @@
 local M = {}
 local commands = require("Arduino-Nvim.commands")
+local b_config = require("Arduino-Nvim.board_config")
 
 vim.api.nvim_create_user_command("InoSelectBoard", function()
 	commands.select_board_gui()
@@ -17,7 +18,7 @@ vim.api.nvim_create_user_command("InoMonitor", function()
 	commands.monitor()
 end, {})
 vim.api.nvim_create_user_command("InoSetBaud", function(opts)
-	commands.set_baudrate(opts.args)
+	b_config.set_baudrate(opts.args)
 end, { nargs = 1 })
 vim.api.nvim_create_user_command("InoUpload", function()
 	commands.upload()

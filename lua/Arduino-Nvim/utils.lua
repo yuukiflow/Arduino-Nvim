@@ -1,6 +1,29 @@
 local M = {}
 
-M.config_file = ".arduino_config.lua"
+-- Helper function to split a string by newlines
+local function split_string_by_newlines(input)
+	local result = {}
+	for line in input:gmatch("[^\r\n]+") do
+		table.insert(result, line)
+	end
+	return result
+end
+
+-- Function to dynamically adjust the floating window height based on buffer content
+local function adjust_window_height(win, buf, opts)
+	local line_count = vim.api.nvim_buf_line_count(buf)
+	local new_height = math.min(line_count, vim.o.lines - 2) -- Max height limited to screen size
+
+	-- Update window height and reposition if necessary to keep it at the bottom
+	opts.height = new_height
+	opts.row = vim.o.lines - new_height - 2
+	vim.api.nvim_win_set_config(win, opts)
+end
+
+-- Utility function to strip ANSI escape codes
+function M.strip_ansi_codes(line)
+	return line:gsub("\27%[[0-9;]*m", "")
+end
 
 -- Updated append_to_buffer function
 function M.append_to_buffer(lines, buf, win, opts)
@@ -17,22 +40,11 @@ function M.append_to_buffer(lines, buf, win, opts)
 	end
 
 	-- Clean each line to remove ANSI codes and add to the buffer
-	local cleaned_lines = vim.tbl_map(strip_ansi_codes, processed_lines)
+	local cleaned_lines = vim.tbl_map(M.strip_ansi_codes, processed_lines)
 	vim.api.nvim_buf_set_lines(buf, -1, -1, false, cleaned_lines)
 
 	-- Adjust the window height if necessary
 	adjust_window_height(win, buf, opts)
-end
-
--- Function to dynamically adjust the floating window height based on buffer content
-local function adjust_window_height(win, buf, opts)
-	local line_count = vim.api.nvim_buf_line_count(buf)
-	local new_height = math.min(line_count, vim.o.lines - 2) -- Max height limited to screen size
-
-	-- Update window height and reposition if necessary to keep it at the bottom
-	opts.height = new_height
-	opts.row = vim.o.lines - new_height - 2
-	vim.api.nvim_win_set_config(win, opts)
 end
 
 -- Function to create a floating CLI monitor window that starts small and grows
@@ -67,20 +79,15 @@ function M.create_floating_cli_monitor()
 	return buf, win, opts
 end
 
--- Function to save config file with given params
-function M.save_config(board_config)
-	local file = io.open(M.config_file, "w")
-	if file then
-		file:write("return {\n")
-		file:write(string.format("  board = %q,\n", board_config.board))
-		file:write(string.format("  port = %q,\n", board_config.port))
-		file:write(string.format("  baudrate = %q,\n", board_config.baudrate))
-		file:write("}\n")
-		file:close()
-	else
-		vim.notify("Error: Cannot write to config file.", vim.log.levels.ERROR)
+-- Helper function to check if arduino-cli is available
+function M.check_arduino_cli()
+	if vim.fn.exepath("arduino-cli") == "" then
+		vim.notify("Error: arduino-cli not found in PATH. Please install it first.", vim.log.levels.ERROR)
+		return false
 	end
+	return true
 end
+
 
 function M.trim(s)
 	return s:match("^%s*(.-)%s*$")

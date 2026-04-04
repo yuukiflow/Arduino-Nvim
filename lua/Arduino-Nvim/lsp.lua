@@ -90,25 +90,53 @@ local function setup_arduino_lsp()
 		return
 	end
 
+  lspconfig_table = {}
+  lspconfig_table["cmd"] = {
+    "arduino-language-server",
+    "-cli",
+    "arduino-cli",
+    "-cli-config",
+    arduino_cli_config,
+    "-clangd",
+    clangd_path,
+    "-fqbn",
+    board,
+  }
+  lspconfig_table['filetypes'] = { "arduino" }
+
+
 	-- Configure the Arduino language server using loaded settings
-	require("lspconfig").arduino_language_server.setup({
-		cmd = {
-			"arduino-language-server",
-			"-cli",
-			"arduino-cli",
-			"-cli-config",
-			arduino_cli_config,
-			"-clangd",
-			clangd_path,
-			"-fqbn",
-			board,
-		},
-		filetypes = { "arduino", "cpp" },
-		root_dir = function(_)
-			return vim.fn.getcwd()
-		end,
-		handlers = {},
-	})
+  if vim.fn.has('nvim-0.11.0') == 1 then
+    local util = require('lspconfig.util')
+    vim.lsp.config['arduino-language-server'] = {
+      cmd = lspconfig_table["cmd"],
+      filetypes = lspconfig_table['filetypes'],
+      root_dir = function(bufnr, on_dir)
+        local fname = vim.api.nvim_buf_get_name(bufnr)
+        on_dir(util.root_pattern('*.ino')(fname))
+      end,
+      capabilities = {
+        textDocument = {
+          ---@diagnostic disable-next-line: assign-type-mismatch
+          semanticTokens = vim.NIL,
+        },
+        workspace = {
+          ---@diagnostic disable-next-line: assign-type-mismatch
+          semanticTokens = vim.NIL,
+        },
+      },
+    }
+    vim.lsp.enable('arduino-language-server')
+  else
+    require("lspconfig").arduino_language_server.setup({
+      cmd = lspconfig_table["cmd"],
+      filetypes = lspconfig_table["filetypes"],
+      root_dir = function(_)
+        return vim.fn.getcwd()
+      end,
+      handlers = {},
+    })
+  end
 end
 
 -- Export the setup function

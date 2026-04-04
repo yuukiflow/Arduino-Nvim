@@ -8,62 +8,37 @@ require("Arduino-Nvim.libGetter")
 remap.load_keymaps()
 
 -- Default settings
-M.board = "arduino:avr:uno"
-M.port = "/dev/ttyUSB0"
-M.baudrate = 115200
-local config_file = ".arduino_config.lua"
-
-function Trim(s)
-	return s:match("^%s*(.-)%s*$")
-end
+M.board_config = {
+  board = "arduino:avr:uno",
+  port = "/dev/ttyUSB0",
+  baudrate = 115200
+}
 
 function M.status()
 	local buf, win, opts = utils.create_floating_cli_monitor()
-	local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board, M.port, M.baudrate)
-	M.append_to_buffer({ data }, buf, win, opts)
+	local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", M.board_config.board, M.board_config.port, M.board_config.baudrate)
+	utils.append_to_buffer({ data }, buf, win, opts)
 end
 
 -- Function to save settings to the config file
-function M.save_config()
-	local file = io.open(config_file, "w")
-	if file then
-		file:write("return {\n")
-		file:write(string.format("  board = %q,\n", M.board))
-		file:write(string.format("  port = %q,\n", M.port))
-		file:write(string.format("  baudrate = %q,\n", M.baudrate))
-		file:write("}\n")
-		file:close()
-	else
-		vim.notify("Error: Cannot write to config file.", vim.log.levels.ERROR)
-	end
-end
-
 function M.load_or_create_config()
 	-- Check if sketch.yaml exists
-	if vim.fn.filereadable(config_file) == 0 then
+	if vim.fn.filereadable(utils.config_file) == 0 then
 		-- If not, create sketch.yaml with default settings
 		vim.notify("config file not found. Creating with default settings.", vim.log.levels.INFO)
-		local file = io.open(config_file, "w")
-		if file then
-			file:write("local M = {}\n")
-			file:write("M.board = '" .. M.board .. "'\n")
-			file:write("M.port = '" .. M.port .. "'\n")
-			file:write("M.baudrate =" .. M.baudrate .. "\n")
-			file:write("return M\n")
-			file:close()
-		else
-			vim.nofify("Error: Cannot create config file.", vim.log.levels.ERROR)
-		end
+    utils.save_config(M.board_config)
 	else
 		-- Read existing file and check if fqbn and port match the config
-		local config = loadfile(config_file)
+		local config = loadfile(utils.config_file)
 		if config then
 			local ok, settings = pcall(config)
 			if ok and settings then
-				M.board = settings.board or M.board
-				M.port = settings.port or M.port
-				M.baudrate = settings.baudrate or M.baudrate
-				vim.notify("Config loaded from file: " .. config_file, vim.log.levels.INFO)
+        M.board_config = {
+          board = settings.board or M.board_config.board,
+          port = settings.port or M.board_config.port,
+          baudrate = settings.baudrate or M.board_config.baudrate,
+        }
+				vim.notify("Config loaded from file: " .. utils.config_file, vim.log.levels.INFO)
 			end
 		end
 	end
@@ -77,23 +52,23 @@ end
 
 -- Function to set the COM port and save config
 function M.set_com(port)
-	M.port = Trim(port)
+	M.board_config.port = utils.trim(port)
 	vim.notify("Port set to: " .. port)
-	M.save_config()
+	utils.save_config(M.board_config)
 end
 
 -- Function to set the board type and save config
 function M.set_board(board)
-	M.board = Trim(board)
+	M.board_config.board = utils.trim(board)
 	vim.notify("Board set to: " .. board)
-	M.save_config()
+	utils.save_config(M.board_config)
 end
 
 -- Function to set the baud rate and save config
 function M.set_baudrate(baudrate)
-	M.baudrate = Trim(baudrate)
+	M.board_config.baudrate = utils.trim(baudrate)
 	vim.notify("Baud rate set to: " .. baudrate)
-	M.save_config()
+	utils.save_config(M.board_config)
 end
 
 -- Helper function to check if arduino-cli is available
@@ -116,14 +91,14 @@ function M.check()
 	local buf, win, opts = utils.create_floating_cli_monitor()
 
 	-- Command to compile in the current directory
-	local cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
+	local cmd = "arduino-cli compile --fqbn " .. M.board_config.board .. " " .. vim.fn.expand("%:p:h")
 
 	-- Run the command asynchronously
 	vim.fn.jobstart(cmd, {
 		stdout_buffered = false,
 		on_stdout = function(_, data)
 			if data then
-				M.append_to_buffer(data, buf, win, opts)
+				utils.append_to_buffer(data, buf, win, opts)
 			end
 		end,
 		on_stderr = function(_, data)
@@ -137,15 +112,15 @@ function M.check()
 					end
 				end
 				if #error_lines > 0 then
-					M.append_to_buffer(error_lines, buf, win, opts)
+					utils.append_to_buffer(error_lines, buf, win, opts)
 				end
 			end
 		end,
 		on_exit = function(_, exit_code)
 			if exit_code == 0 then
-				M.append_to_buffer({ "--- Code checked successfully. ---" }, buf, win, opts)
+				utils.append_to_buffer({ "--- Code checked successfully. ---" }, buf, win, opts)
 			else
-				M.append_to_buffer({ "--- Code check failed. ---" }, buf, win, opts)
+				utils.append_to_buffer({ "--- Code check failed. ---" }, buf, win, opts)
 			end
 		end,
 	})
@@ -170,13 +145,13 @@ function M.upload()
 	local buf, win, opts = utils.create_floating_cli_monitor()
 
 	-- Commands for compiling and uploading
-	local compile_cmd = "arduino-cli compile --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
+	local compile_cmd = "arduino-cli compile --fqbn " .. M.board_config.board .. " " .. vim.fn.expand("%:p:h")
 
 	-- For UNO R4 WiFi, try using arduino-cli's built-in reset handling
 	local upload_cmd = "arduino-cli upload -p "
-		.. M.port
+		.. M.board_config.port
 		.. " --fqbn "
-		.. M.board
+		.. M.board_config.board
 		.. " --verify "
 		.. vim.fn.expand("%:p:h")
 
@@ -186,12 +161,12 @@ function M.upload()
 			stdout_buffered = false,
 			on_stdout = function(_, data)
 				if data then
-					M.append_to_buffer(data, buf, win, opts)
+					utils.append_to_buffer(data, buf, win, opts)
 				end
 			end,
 			on_stderr = function(_, data)
 				if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-					M.append_to_buffer(
+					utils.append_to_buffer(
 						vim.tbl_map(function(line)
 							return "Error: " .. line
 						end, data),
@@ -203,11 +178,11 @@ function M.upload()
 			end,
 			on_exit = function(_, exit_code)
 				if exit_code == 0 then
-					M.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
+					utils.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
 				else
-					M.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
+					utils.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
 					-- Suggest checking available ports
-					M.append_to_buffer({
+					utils.append_to_buffer({
 						"Hint: Run ':InoList' to check available ports or ':InoSelectPort' to choose a different port",
 					}, buf, win, opts)
 				end
@@ -220,12 +195,12 @@ function M.upload()
 		stdout_buffered = false,
 		on_stdout = function(_, data)
 			if data then
-				M.append_to_buffer(data, buf, win, opts)
+				utils.append_to_buffer(data, buf, win, opts)
 			end
 		end,
 		on_stderr = function(_, data)
 			if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-				M.append_to_buffer(
+				utils.append_to_buffer(
 					vim.tbl_map(function(line)
 						return "Error: " .. line
 					end, data),
@@ -237,10 +212,10 @@ function M.upload()
 		end,
 		on_exit = function(_, exit_code)
 			if exit_code == 0 then
-				M.append_to_buffer({ "--- Compilation Complete, Starting Upload ---" }, buf, win, opts)
+				utils.append_to_buffer({ "--- Compilation Complete, Starting Upload ---" }, buf, win, opts)
 				start_upload()
 			else
-				M.append_to_buffer({ "--- Compilation Failed ---" }, buf, win, opts)
+				utils.append_to_buffer({ "--- Compilation Failed ---" }, buf, win, opts)
 			end
 		end,
 	})
@@ -414,7 +389,7 @@ function M.InoList()
 	end
 	local result = handle:read("*a")
 	handle:close()
-	M.append_to_buffer({ result }, buf, win, opts)
+	utils.append_to_buffer({ result }, buf, win, opts)
 end
 
 -- Main GUI function to link board and port selection
@@ -463,15 +438,15 @@ function M.monitor()
 	local config_info = {
 		"Arduino Serial Monitor",
 		"======================",
-		"Board: " .. M.board,
-		"Port: " .. M.port,
+		"Board: " .. M.board_config.board,
+		"Port: " .. M.board_config.port,
 		"",
 		"Getting monitor configuration...",
 	}
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, config_info)
 
 	-- Get monitor configuration details
-	local describe_cmd = "arduino-cli monitor -p " .. M.port .. " --describe"
+	local describe_cmd = "arduino-cli monitor -p " .. M.board_config.port .. " --describe"
 	vim.fn.jobstart(describe_cmd, {
 		stdout_buffered = false,
 		on_stdout = function(_, data)
@@ -498,7 +473,11 @@ function M.monitor()
 				{ "", "Starting monitor...", "Press CTRL-C or Esc to exit.", "" }
 			)
 
-			local serial_command = string.format("arduino-cli monitor -p %s -b %s", M.port, M.board)
+			local serial_command = string.format(
+        "arduino-cli monitor -p %s -b %s",
+        M.board_config.port,
+        M.board_config.board,
+      )
 
 			-- Create a new buffer for the terminal
 			local term_buf = vim.api.nvim_create_buf(false, true)
@@ -552,29 +531,29 @@ end
 function M.upload_reset()
 	-- Try manual reset approach for UNO R4 WiFi
 	local buf, win, opts = utils.create_floating_cli_monitor()
-	M.append_to_buffer({ "--- Attempting upload with manual reset ---" }, buf, win, opts)
+	utils.append_to_buffer({ "--- Attempting upload with manual reset ---" }, buf, win, opts)
 
 	-- First set port to 1200 baud to trigger reset
-	local reset_cmd = "stty -f " .. M.port .. " 1200"
-	M.append_to_buffer({ "Resetting board..." }, buf, win, opts)
+	local reset_cmd = "stty -f " .. M.board_config.port .. " 1200"
+	utils.append_to_buffer({ "Resetting board..." }, buf, win, opts)
 	os.execute(reset_cmd)
 
 	-- Wait a moment for reset
 	vim.defer_fn(function()
 		-- Try upload after reset
-		local upload_cmd = "arduino-cli upload -p " .. M.port .. " --fqbn " .. M.board .. " " .. vim.fn.expand("%:p:h")
-		M.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
+		local upload_cmd = "arduino-cli upload -p " .. M.board_config.port .. " --fqbn " .. M.board_config.board .. " " .. vim.fn.expand("%:p:h")
+		utils.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
 
 		vim.fn.jobstart(upload_cmd, {
 			stdout_buffered = false,
 			on_stdout = function(_, data)
 				if data then
-					M.append_to_buffer(data, buf, win, opts)
+					utils.append_to_buffer(data, buf, win, opts)
 				end
 			end,
 			on_stderr = function(_, data)
 				if data and #data > 0 and data[1]:match("%S") then
-					M.append_to_buffer(
+					utils.append_to_buffer(
 						vim.tbl_map(function(line)
 							return "Error: " .. line
 						end, data),
@@ -586,9 +565,9 @@ function M.upload_reset()
 			end,
 			on_exit = function(_, exit_code)
 				if exit_code == 0 then
-					M.append_to_buffer({ "--- Upload with reset Complete ---" }, buf, win, opts)
+					utils.append_to_buffer({ "--- Upload with reset Complete ---" }, buf, win, opts)
 				else
-					M.append_to_buffer({ "--- Upload with reset Failed ---" }, buf, win, opts)
+					utils.append_to_buffer({ "--- Upload with reset Failed ---" }, buf, win, opts)
 				end
 			end,
 		})
@@ -598,26 +577,26 @@ end
 function M.upload_debug()
 	-- Debug upload process for UNO R4 WiFi
 	local buf, win, opts = utils.create_floating_cli_monitor()
-	M.append_to_buffer({ "--- Debugging Arduino UNO R4 WiFi Upload ---" }, buf, win, opts)
+	utils.append_to_buffer({ "--- Debugging Arduino UNO R4 WiFi Upload ---" }, buf, win, opts)
 
 	-- Check board detection
-	M.append_to_buffer({ "Checking board detection..." }, buf, win, opts)
+	utils.append_to_buffer({ "Checking board detection..." }, buf, win, opts)
 	vim.fn.jobstart("arduino-cli board list", {
 		stdout_buffered = false,
 		on_stdout = function(_, data)
 			if data then
-				M.append_to_buffer(data, buf, win, opts)
+				utils.append_to_buffer(data, buf, win, opts)
 			end
 		end,
 		on_exit = function()
 			-- Try to touch the port to see if it's accessible
-			M.append_to_buffer({ "Testing port access..." }, buf, win, opts)
-			vim.fn.jobstart("stty -f " .. M.port, {
+			utils.append_to_buffer({ "Testing port access..." }, buf, win, opts)
+			vim.fn.jobstart("stty -f " .. M.board_config.port, {
 				stdout_buffered = false,
 				on_stdout = function(_, data)
 					if data then
-						M.append_to_buffer(
-							{ "Port " .. M.port .. " accessible: " .. table.concat(data, " ") },
+						utils.append_to_buffer(
+							{ "Port " .. M.board_config.port .. " accessible: " .. table.concat(data, " ") },
 							buf,
 							win,
 							opts
@@ -626,28 +605,28 @@ function M.upload_debug()
 				end,
 				on_stderr = function(_, data)
 					if data then
-						M.append_to_buffer({ "Port error: " .. table.concat(data, " ") }, buf, win, opts)
+						utils.append_to_buffer({ "Port error: " .. table.concat(data, " ") }, buf, win, opts)
 					end
 				end,
 				on_exit = function()
 					-- Try verbose upload
-					M.append_to_buffer({ "Attempting verbose upload..." }, buf, win, opts)
+					utils.append_to_buffer({ "Attempting verbose upload..." }, buf, win, opts)
 					local verbose_cmd = "arduino-cli upload -p "
-						.. M.port
+						.. M.board_config.port
 						.. " --fqbn "
-						.. M.board
+						.. M.board_config.board
 						.. " --verbose "
 						.. vim.fn.expand("%:p:h")
 					vim.fn.jobstart(verbose_cmd, {
 						stdout_buffered = false,
 						on_stdout = function(_, data)
 							if data then
-								M.append_to_buffer(data, buf, win, opts)
+								utils.append_to_buffer(data, buf, win, opts)
 							end
 						end,
 						on_stderr = function(_, data)
 							if data then
-								M.append_to_buffer(data, buf, win, opts)
+								utils.append_to_buffer(data, buf, win, opts)
 							end
 						end,
 					})

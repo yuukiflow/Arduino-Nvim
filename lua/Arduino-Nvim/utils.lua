@@ -1,5 +1,7 @@
 local M = {}
 
+M.config_file = ".arduino_config.lua"
+
 -- Updated append_to_buffer function
 function M.append_to_buffer(lines, buf, win, opts)
 	-- Ensure lines is a table, even if a single string is passed
@@ -64,3 +66,24 @@ function M.create_floating_cli_monitor()
 
 	return buf, win, opts
 end
+
+-- Function to save config file with given params
+function M.save_config(board_config)
+	local file = io.open(M.config_file, "w")
+	if file then
+		file:write("return {\n")
+		file:write(string.format("  board = %q,\n", board_config.board))
+		file:write(string.format("  port = %q,\n", board_config.port))
+		file:write(string.format("  baudrate = %q,\n", board_config.baudrate))
+		file:write("}\n")
+		file:close()
+	else
+		vim.notify("Error: Cannot write to config file.", vim.log.levels.ERROR)
+	end
+end
+
+function M.trim(s)
+	return s:match("^%s*(.-)%s*$")
+end
+
+return M

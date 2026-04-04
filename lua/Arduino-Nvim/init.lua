@@ -362,7 +362,7 @@ end
 function M.select_board_gui(callback)
   -- call get_boards to get a list of boards
   local boards = M.get_boards()
-  if #boards == 0 then
+  if not boards or #boards == 0 then
     return
   end
 
@@ -437,7 +437,7 @@ end
 
 function M.select_port_gui()
   local ports = M.get_ports()
-  if #ports == 0 then
+  if not ports or #ports == 0 then
     return
   end
 

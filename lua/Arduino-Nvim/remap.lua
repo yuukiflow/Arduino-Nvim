@@ -72,6 +72,4 @@ function M.load_keymaps()
   end
 end
 
-M.load_keymaps()
-
 return M

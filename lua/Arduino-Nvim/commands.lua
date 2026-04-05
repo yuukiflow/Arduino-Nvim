@@ -313,7 +313,6 @@ end
 
 function M.upload_reset()
 	-- Try manual reset approach for UNO R4 WiFi
-	local buf, win, opts = utils.create_floating_cli_monitor()
 	utils.append_to_buffer({ "--- Attempting upload with manual reset ---" }, buf, win, opts)
 
 	-- First set port to 1200 baud to trigger reset
@@ -330,32 +329,29 @@ function M.upload_reset()
     .. _ArduinoConfigValues.board 
     .. " --verify " 
     .. vim.fn.expand("%:p:h")
-		utils.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
+		gui.show_in_floating_window({ "Starting upload after reset..." })
 
 		vim.fn.jobstart(upload_cmd, {
 			stdout_buffered = false,
 			on_stdout = function(_, data)
 				if data then
-					utils.append_to_buffer(data, buf, win, opts)
+					gui.show_in_floating_window(data)
 				end
 			end,
 			on_stderr = function(_, data)
 				if data and #data > 0 and data[1]:match("%S") then
-					utils.append_to_buffer(
+					gui.show_in_floating_window(
 						vim.tbl_map(function(line)
 							return "Error: " .. line
-						end, data),
-						buf,
-						win,
-						opts
+						end, data)
 					)
 				end
 			end,
 			on_exit = function(_, exit_code)
 				if exit_code == 0 then
-					utils.append_to_buffer({ "--- Upload with reset Complete ---" }, buf, win, opts)
+					gui.show_in_floating_window({ "--- Upload with reset Complete ---" })
 				else
-					utils.append_to_buffer({ "--- Upload with reset Failed ---" }, buf, win, opts)
+					gui.show_in_floating_window({ "--- Upload with reset Failed ---" })
 				end
 			end,
 		})
@@ -364,41 +360,37 @@ end
 
 function M.upload_debug()
 	-- Debug upload process for UNO R4 WiFi
-	local buf, win, opts = utils.create_floating_cli_monitor()
-	utils.append_to_buffer({ "--- Debugging Arduino UNO R4 WiFi Upload ---" }, buf, win, opts)
+	gui.show_in_floating_window({ "--- Debugging Arduino UNO R4 WiFi Upload ---" })
 
 	-- Check board detection
-	utils.append_to_buffer({ "Checking board detection..." }, buf, win, opts)
+	gui.show_in_floating_window({ "Checking board detection..." })
 	vim.fn.jobstart("arduino-cli board list", {
 		stdout_buffered = false,
 		on_stdout = function(_, data)
 			if data then
-				utils.append_to_buffer(data, buf, win, opts)
+				gui.show_in_floating_window(data)
 			end
 		end,
 		on_exit = function()
 			-- Try to touch the port to see if it's accessible
-			utils.append_to_buffer({ "Testing port access..." }, buf, win, opts)
+			gui.show_in_floating_window({ "Testing port access..." })
 			vim.fn.jobstart("stty -f " .. _ArduinoConfigValues.port, {
 				stdout_buffered = false,
 				on_stdout = function(_, data)
 					if data then
-						utils.append_to_buffer(
-							{ "Port " .. _ArduinoConfigValues.port .. " accessible: " .. table.concat(data, " ") },
-							buf,
-							win,
-							opts
+						gui.show_in_floating_window(
+							{ "Port " .. _ArduinoConfigValues.port .. " accessible: " .. table.concat(data, " ") }
 						)
 					end
 				end,
 				on_stderr = function(_, data)
 					if data then
-						utils.append_to_buffer({ "Port error: " .. table.concat(data, " ") }, buf, win, opts)
+						gui.show_in_floating_window({ "Port error: " .. table.concat(data, " ") })
 					end
 				end,
 				on_exit = function()
 					-- Try verbose upload
-					utils.append_to_buffer({ "Attempting verbose upload..." }, buf, win, opts)
+					gui.show_in_floating_window({ "Attempting verbose upload..." })
 					local verbose_cmd = "arduino-cli upload -p "
 						.. _ArduinoConfigValues.port
 						.. " --fqbn "
@@ -409,12 +401,12 @@ function M.upload_debug()
 						stdout_buffered = false,
 						on_stdout = function(_, data)
 							if data then
-								utils.append_to_buffer(data, buf, win, opts)
+								gui.show_in_floating_window(data)
 							end
 						end,
 						on_stderr = function(_, data)
 							if data then
-								utils.append_to_buffer(data, buf, win, opts)
+								gui.show_in_floating_window(data)
 							end
 						end,
 					})

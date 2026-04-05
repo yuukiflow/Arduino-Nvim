@@ -3,6 +3,7 @@
 -- i.e. `.arduino_config.lua`
 -- If any other code wants to interact with the config file
 -- should call this module to update it or get the current data
+local gui = require("Arduino-Nvim.gui")
 local utils = require("Arduino-Nvim.utils")
 
 local M = {}
@@ -68,13 +69,12 @@ function M.load_or_create_config()
 end
 
 function M.board_config_status()
-	local buf, win, opts = utils.create_floating_cli_monitor()
 	local data = string.format(
     "Board: %s\nPort: %s\nBaudrate: %s",
     _ArduinoConfigValues.board,
     _ArduinoConfigValues.port,
     _ArduinoConfigValues.baudrate)
-	utils.append_to_buffer({ data }, buf, win, opts)
+	gui.show_in_floating_window({ data })
 end
 
 return M

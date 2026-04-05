@@ -100,7 +100,7 @@ function M.compile(callback)
   local cmd = "arduino-cli compile --fqbn " 
     .. _ArduinoConfigValues.board 
     .. " " 
-    .. vim.fn.expand("%:p:h")
+    .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
 
 	-- Run the command asynchronously
 	vim.fn.jobstart(cmd, {
@@ -149,7 +149,7 @@ function M.upload()
 		.. " --fqbn "
 		.. _ArduinoConfigValues.board
 		.. " --verify "
-		.. vim.fn.expand("%:p:h")
+    .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
 
 	-- Function to start upload after successful compilation
 	local function start_upload()
@@ -269,7 +269,7 @@ function M.monitor()
 
 			-- Start the actual monitor in the new buffer
 			vim.fn.termopen(serial_command, {
-				cwd = vim.fn.expand("%:p:h"),
+				cwd = vim.fn.shellescape(vim.fn.expand("%:p:h")),
 				on_exit = function(_, exit_code)
 					if exit_code ~= 0 and vim.api.nvim_buf_is_valid(term_buf) then
 						vim.api.nvim_buf_set_lines(
@@ -329,7 +329,7 @@ function M.upload_reset()
     .. " --fqbn " 
     .. _ArduinoConfigValues.board 
     .. " --verify " 
-    .. vim.fn.expand("%:p:h")
+    .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
 		gui.show_in_floating_window({ "Starting upload after reset..." })
 
 		vim.fn.jobstart(upload_cmd, {
@@ -397,7 +397,7 @@ function M.upload_debug()
 						.. " --fqbn "
 						.. _ArduinoConfigValues.board
 						.. " --verbose "
-						.. vim.fn.expand("%:p:h")
+            .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
 					vim.fn.jobstart(verbose_cmd, {
 						stdout_buffered = false,
 						on_stdout = function(_, data)

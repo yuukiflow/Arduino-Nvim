@@ -27,21 +27,21 @@ end
 function M.set_com(port)
 	_ArduinoConfigValues.port = utils.trim(port)
 	vim.notify("Port set to: " .. port)
-	utils.save_config()
+	M.save_config()
 end
 
 -- Function to set the board type and save config
 function M.set_board(board)
 	_ArduinoConfigValues.board = utils.trim(board)
 	vim.notify("Board set to: " .. board)
-	utils.save_config()
+	M.save_config()
 end
 
 -- Function to set the baud rate and save config
 function M.set_baudrate(baudrate)
 	_ArduinoConfigValues.baudrate = utils.trim(baudrate)
 	vim.notify("Baud rate set to: " .. baudrate)
-	utils.save_config()
+	M.save_config()
 end
 
 -- Function to save settings to the config file

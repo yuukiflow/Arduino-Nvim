@@ -72,8 +72,13 @@ opts = {
     use_default_keymaps = true, -- load default keymaps
     use_default_commands = true, -- load default commands
     keymaps = {}, -- custom keymaps
+    picker_backend = "telescope", -- backend to use for user input commands
 }
 ```
+
+Supported picker backends are:
+- `telescope` (requires `telescope.nvim`)
+- `nvim` (uses `vim.ui.select` api)
 
 Also, you can add your custom keymaps that will be uploaded after default ones (if `use_default_keymaps` is `true`):
 

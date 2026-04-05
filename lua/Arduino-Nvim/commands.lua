@@ -56,6 +56,50 @@ function M.get_boards()
   return boards
 end
 
+function M.get_ports_v2()
+	-- Check if arduino-cli is available
+	if not utils.check_arduino_cli() then
+		return
+	end
+
+	-- Get list of connected ports using arduino-cli
+	local handle = io.popen("arduino-cli board list --format json")
+	if not handle then
+		vim.notify("Error: Failed to execute arduino-cli board list --format json", vim.log.levels.ERROR)
+		return
+	end
+	local result = handle:read("*a")
+	handle:close()
+
+	local ok, data = pcall(vim.json.decode, result)
+	if not ok then
+		vim.notify("Error parsing JSON from arduino-cli: " .. tostring(data), vim.log.levels.ERROR)
+		vim.notify("Raw output: " .. result:sub(1, 200) .. "...", vim.log.levels.DEBUG)
+		return
+	end
+
+	-- Extract port names from the arduino-cli output
+	local ports = {}
+  if ok and data and data.detected_ports then
+    for _, info in ipairs(data.detected_ports) do
+      local address = info.port.address
+      local name = "Unknown"
+      if info.matching_boards and #info.matching_boards > 0 then
+        name = info.matching_boards[1].name
+      end
+
+      table.insert(ports, {address = address, name = name})
+    end
+  end
+	-- If no ports found, show an error message
+	if #ports == 0 then
+		vim.notify("No connected COM ports found.", vim.log.levels.ERROR)
+		return
+	end
+
+  return ports
+end
+
 -- get_ports returns a table with the available ports
 function M.get_ports()
 	-- Check if arduino-cli is available

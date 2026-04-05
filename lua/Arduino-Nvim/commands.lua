@@ -2,7 +2,6 @@ local M = {}
 
 -- Load dependencies
 local utils = require("Arduino-Nvim.utils")
-local b_config = require("Arduino-Nvim.board_config")
 
 -- get_boards returns a table of available boards
 function M.get_boards()
@@ -101,7 +100,7 @@ function M.compile(callback)
 
 	-- Command to compile in the current directory
   local cmd = "arduino-cli compile --fqbn " 
-    .. b_config.board_config_table.board 
+    .. _ArduinoConfigValues.board 
     .. " " 
     .. vim.fn.expand("%:p:h")
 
@@ -148,9 +147,9 @@ function M.upload()
 	end
 
 	local upload_cmd = "arduino-cli upload -p "
-		.. b_config.board_config_table.port
+		.. _ArduinoConfigValues.port
 		.. " --fqbn "
-		.. b_config.board_config_table.board
+		.. _ArduinoConfigValues.board
 		.. " --verify "
 		.. vim.fn.expand("%:p:h")
 
@@ -193,6 +192,14 @@ function M.upload()
   M.compile(start_upload)
 end
 
+function M.upload_slow()
+  local init_br = _ArduinoConfigValues.baudrate
+  _ArduinoConfigValues.baudrate = 1200
+  vim.notify("Trying upload with 1200 baud rate...", vim.log.levels.INFO)
+  M.upload()
+  _ArduinoConfigValues.baudrate = init_br
+end
+
 function M.monitor()
 	-- Check if arduino-cli is available
 	if not utils.check_arduino_cli() then
@@ -219,15 +226,15 @@ function M.monitor()
 	local config_info = {
 		"Arduino Serial Monitor",
 		"======================",
-		"Board: " .. b_config.board_config_table.board,
-		"Port: " .. b_config.board_config_table.port,
+		"Board: " .. _ArduinoConfigValues.board,
+		"Port: " .. _ArduinoConfigValues.port,
 		"",
 		"Getting monitor configuration...",
 	}
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, config_info)
 
 	-- Get monitor configuration details
-	local describe_cmd = "arduino-cli monitor -p " .. b_config.board_config_table.port .. " --describe"
+	local describe_cmd = "arduino-cli monitor -p " .. _ArduinoConfigValues.port .. " --describe"
 	vim.fn.jobstart(describe_cmd, {
 		stdout_buffered = false,
 		on_stdout = function(_, data)
@@ -256,8 +263,8 @@ function M.monitor()
 
 			local serial_command = string.format(
         "arduino-cli monitor -p %s -b %s",
-        b_config.board_config_table.port,
-        b_config.board_config_table.board
+        _ArduinoConfigValues.port,
+        _ArduinoConfigValues.board
       )
 
 			-- Create a new buffer for the terminal
@@ -315,7 +322,7 @@ function M.upload_reset()
 	utils.append_to_buffer({ "--- Attempting upload with manual reset ---" }, buf, win, opts)
 
 	-- First set port to 1200 baud to trigger reset
-	local reset_cmd = "stty -f " .. b_config.board_config_table.port .. " 1200"
+	local reset_cmd = "stty -f " .. _ArduinoConfigValues.port .. " 1200"
 	utils.append_to_buffer({ "Resetting board..." }, buf, win, opts)
 	os.execute(reset_cmd)
 
@@ -323,9 +330,9 @@ function M.upload_reset()
 	vim.defer_fn(function()
 		-- Try upload after reset
 		local upload_cmd = "arduino-cli upload -p " 
-    .. b_config.board_config_table.port 
+    .. _ArduinoConfigValues.port 
     .. " --fqbn " 
-    .. b_config.board_config_table.board 
+    .. _ArduinoConfigValues.board 
     .. " --verify " 
     .. vim.fn.expand("%:p:h")
 		utils.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
@@ -377,12 +384,12 @@ function M.upload_debug()
 		on_exit = function()
 			-- Try to touch the port to see if it's accessible
 			utils.append_to_buffer({ "Testing port access..." }, buf, win, opts)
-			vim.fn.jobstart("stty -f " .. b_config.board_config_table.port, {
+			vim.fn.jobstart("stty -f " .. _ArduinoConfigValues.port, {
 				stdout_buffered = false,
 				on_stdout = function(_, data)
 					if data then
 						utils.append_to_buffer(
-							{ "Port " .. b_config.board_config_table.port .. " accessible: " .. table.concat(data, " ") },
+							{ "Port " .. _ArduinoConfigValues.port .. " accessible: " .. table.concat(data, " ") },
 							buf,
 							win,
 							opts
@@ -398,9 +405,9 @@ function M.upload_debug()
 					-- Try verbose upload
 					utils.append_to_buffer({ "Attempting verbose upload..." }, buf, win, opts)
 					local verbose_cmd = "arduino-cli upload -p "
-						.. b_config.board_config_table.port
+						.. _ArduinoConfigValues.port
 						.. " --fqbn "
-						.. b_config.board_config_table.board
+						.. _ArduinoConfigValues.board
 						.. " --verbose "
 						.. vim.fn.expand("%:p:h")
 					vim.fn.jobstart(verbose_cmd, {

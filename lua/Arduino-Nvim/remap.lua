@@ -58,7 +58,7 @@ local keymaps = {
 }
 
 
-function M.load_keymaps()
+function M.load_keymaps(use_default_keymaps)
   vim.keymap.set("n", "<Esc>", function()
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       if vim.api.nvim_win_get_config(win).relative == "editor" then
@@ -67,8 +67,10 @@ function M.load_keymaps()
     end
   end, { silent = true , noremap = true })
 
-  for _, keymap in pairs(keymaps) do
-    vim.keymap.set(keymap.value or "n", keymap.key, keymap.func, { silent = true })
+  if use_default_keymaps then
+    for _, keymap in pairs(keymaps) do
+      vim.keymap.set(keymap.value or "n", keymap.key, keymap.func, { silent = true })
+    end
   end
 end
 

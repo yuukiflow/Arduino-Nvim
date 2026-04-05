@@ -1,4 +1,3 @@
-local b_config = require("Arduino-Nvim.board_config")
 local utils = require("Arduino-Nvim.utils")
 local M = {}
 
@@ -11,8 +10,8 @@ local function check_or_create_sketch_yaml()
 		return
 	end
 	-- Load current config for board and port
-	local board = b_config.board_config_table.board
-	local port = b_config.board_config_table.port
+	local board = _ArduinoConfigValues.board
+	local port = _ArduinoConfigValues.port
 
 	-- Check if sketch.yaml exists
 	if vim.fn.filereadable(yaml_file) == 0 then
@@ -52,7 +51,7 @@ end
 -- Set up the Arduino language server with saved configuration
 function M.setup_arduino_lsp()
 	check_or_create_sketch_yaml()
-	local board = b_config.board_config_table.board or "arduino:avr:uno" -- Default fallback
+	local board = _ArduinoConfigValues.board or "arduino:avr:uno" -- Default fallback
 
 	-- Find required executables
 	local clangd_path = utils.find_executable("clangd") or "/usr/bin/clangd"

@@ -7,22 +7,14 @@ local utils = require("Arduino-Nvim.utils")
 
 local M = {}
 
--- Default settings
-M.config_file = ".arduino_config.lua"
-M.board_config_table = {
-  board = "arduino:avr:uno",
-  port = "/dev/ttyUSB0",
-  baudrate = 115200
-}
-
 -- Function to save config file with given params
-function M.save_config(b_config_table)
-	local file = io.open(M.config_file, "w")
+function M.save_config()
+	local file = io.open(_ArduinoConfigValues.config_file, "w")
 	if file then
 		file:write("return {\n")
-		file:write(string.format("  board = %q,\n", b_config_table.board))
-		file:write(string.format("  port = %q,\n", b_config_table.port))
-		file:write(string.format("  baudrate = %q,\n", b_config_table.baudrate))
+		file:write(string.format("  board = %q,\n", _ArduinoConfigValues.board))
+		file:write(string.format("  port = %q,\n", _ArduinoConfigValues.port))
+		file:write(string.format("  baudrate = %q,\n", _ArduinoConfigValues.baudrate))
 		file:write("}\n")
 		file:close()
 	else
@@ -32,44 +24,44 @@ end
 
 -- Function to set the COM port and save config
 function M.set_com(port)
-	M.board_config_table.port = utils.trim(port)
+	_ArduinoConfigValues.port = utils.trim(port)
 	vim.notify("Port set to: " .. port)
-	utils.save_config(M.board_config_table)
+	utils.save_config()
 end
 
 -- Function to set the board type and save config
 function M.set_board(board)
-	M.board_config_table.board = utils.trim(board)
+	_ArduinoConfigValues.board = utils.trim(board)
 	vim.notify("Board set to: " .. board)
-	utils.save_config(M.board_config_table)
+	utils.save_config()
 end
 
 -- Function to set the baud rate and save config
 function M.set_baudrate(baudrate)
-	M.board_config_table.baudrate = utils.trim(baudrate)
+	_ArduinoConfigValues.baudrate = utils.trim(baudrate)
 	vim.notify("Baud rate set to: " .. baudrate)
-	utils.save_config(M.board_config_table)
+	utils.save_config()
 end
 
 -- Function to save settings to the config file
 function M.load_or_create_config()
 	-- Check if sketch.yaml exists
-	if vim.fn.filereadable(M.config_file) == 0 then
+	if vim.fn.filereadable(_ArduinoConfigValues.config_file) == 0 then
 		-- If not, create sketch.yaml with default settings
 		vim.notify("config file not found. Creating with default settings.", vim.log.levels.INFO)
-    b_config.save_config(M.board_config_table)
+    M.save_config()
 	else
 		-- Read existing file and check if fqbn and port match the config
-		local config = loadfile(M.config_file)
+		local config = loadfile(_ArduinoConfigValues.config_file)
 		if config then
 			local ok, settings = pcall(config)
 			if ok and settings then
-        M.board_config_table = {
-          board = settings.board or M.board_config_table.board,
-          port = settings.port or M.board_config_table.port,
-          baudrate = settings.baudrate or M.board_config_table.baudrate,
-        }
-				vim.notify("Config loaded from file: " .. M.config_file, vim.log.levels.INFO)
+          _ArduinoConfigValues.board = settings.board or _ArduinoConfigValues.board
+          _ArduinoConfigValues.port = settings.port or _ArduinoConfigValues.port
+          _ArduinoConfigValues.baudrate = settings.baudrate or _ArduinoConfigValues.baudrate
+				vim.notify(
+          "Config loaded from file: " .. _ArduinoConfigValues.config_file,
+          vim.log.levels.INFO)
 			end
 		end
 	end
@@ -79,9 +71,9 @@ function M.board_config_status()
 	local buf, win, opts = utils.create_floating_cli_monitor()
 	local data = string.format(
     "Board: %s\nPort: %s\nBaudrate: %s",
-    M.board_config_table.board,
-    M.board_config_table.port,
-    M.board_config_table.baudrate)
+    _ArduinoConfigValues.board,
+    _ArduinoConfigValues.port,
+    _ArduinoConfigValues.baudrate)
 	utils.append_to_buffer({ data }, buf, win, opts)
 end
 

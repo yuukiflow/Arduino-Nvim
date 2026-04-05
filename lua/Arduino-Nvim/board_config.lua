@@ -85,5 +85,4 @@ function M.board_config_status()
 	utils.append_to_buffer({ data }, buf, win, opts)
 end
 
-
 return M

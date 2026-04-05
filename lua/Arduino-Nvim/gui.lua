@@ -1,3 +1,6 @@
+-- gui file is intended to save all the code that
+-- is used to create a gui experience like floating
+-- windows or display selectors
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
 local M = {}

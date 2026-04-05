@@ -25,6 +25,10 @@ function M.strip_ansi_codes(line)
 	return line:gsub("\27%[[0-9;]*m", "")
 end
 
+-- TODO: move append_to_buffer and create_floating_cli_monitor
+-- to a new func in gui module
+--
+
 -- Updated append_to_buffer function
 function M.append_to_buffer(lines, buf, win, opts)
 	-- Ensure lines is a table, even if a single string is passed

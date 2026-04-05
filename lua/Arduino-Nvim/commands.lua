@@ -4,138 +4,7 @@ local M = {}
 local utils = require("Arduino-Nvim.utils")
 local b_config = require("Arduino-Nvim.board_config")
 
--- Function to check code
-function M.check()
-	-- Check if arduino-cli is available
-	if not utils.check_arduino_cli() then
-		return
-	end
-
-	-- Create the output window buffer and window
-	local buf, win, opts = utils.create_floating_cli_monitor()
-
-	-- Command to compile in the current directory
-	local cmd = "arduino-cli compile --fqbn " .. b_config.board_config_table.board .. " " .. vim.fn.expand("%:p:h")
-
-	-- Run the command asynchronously
-	vim.fn.jobstart(cmd, {
-		stdout_buffered = false,
-		on_stdout = function(_, data)
-			if data then
-				utils.append_to_buffer(data, buf, win, opts)
-			end
-		end,
-		on_stderr = function(_, data)
-			-- Only append lines that contain actual content to avoid false errors
-			if data then
-				local error_lines = {}
-				for _, line in ipairs(data) do
-					local cleaned_line = utils.strip_ansi_codes(line)
-					if cleaned_line:match("%S") then -- Only consider non-empty, non-whitespace lines
-						table.insert(error_lines, "Error: " .. cleaned_line)
-					end
-				end
-				if #error_lines > 0 then
-					utils.append_to_buffer(error_lines, buf, win, opts)
-				end
-			end
-		end,
-		on_exit = function(_, exit_code)
-			if exit_code == 0 then
-				utils.append_to_buffer({ "--- Code checked successfully. ---" }, buf, win, opts)
-			else
-				utils.append_to_buffer({ "--- Code check failed. ---" }, buf, win, opts)
-			end
-		end,
-	})
-end
-
-function M.upload()
-	-- Check if arduino-cli is available
-	if not utils.check_arduino_cli() then
-		return
-	end
-
-	-- Create the CLI monitor buffer and window
-	local buf, win, opts = utils.create_floating_cli_monitor()
-
-	-- Commands for compiling and uploading
-	local compile_cmd = "arduino-cli compile --fqbn " .. b_config.board_config_table.board .. " " .. vim.fn.expand("%:p:h")
-
-	-- For UNO R4 WiFi, try using arduino-cli's built-in reset handling
-	local upload_cmd = "arduino-cli upload -p "
-		.. b_config.board_config_table.port
-		.. " --fqbn "
-		.. b_config.board_config_table.board
-		.. " --verify "
-		.. vim.fn.expand("%:p:h")
-
-	-- Function to start upload after successful compilation
-	local function start_upload()
-		vim.fn.jobstart(upload_cmd, {
-			stdout_buffered = false,
-			on_stdout = function(_, data)
-				if data then
-					utils.append_to_buffer(data, buf, win, opts)
-				end
-			end,
-			on_stderr = function(_, data)
-				if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-					utils.append_to_buffer(
-						vim.tbl_map(function(line)
-							return "Error: " .. line
-						end, data),
-						buf,
-						win,
-						opts
-					)
-				end
-			end,
-			on_exit = function(_, exit_code)
-				if exit_code == 0 then
-					utils.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
-				else
-					utils.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
-					-- Suggest checking available ports
-					utils.append_to_buffer({
-						"Hint: Run ':InoList' to check available ports or ':InoSelectPort' to choose a different port",
-					}, buf, win, opts)
-				end
-			end,
-		})
-	end
-
-	-- Start the compilation job
-	vim.fn.jobstart(compile_cmd, {
-		stdout_buffered = false,
-		on_stdout = function(_, data)
-			if data then
-				utils.append_to_buffer(data, buf, win, opts)
-			end
-		end,
-		on_stderr = function(_, data)
-			if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-				utils.append_to_buffer(
-					vim.tbl_map(function(line)
-						return "Error: " .. line
-					end, data),
-					buf,
-					win,
-					opts
-				)
-			end
-		end,
-		on_exit = function(_, exit_code)
-			if exit_code == 0 then
-				utils.append_to_buffer({ "--- Compilation Complete, Starting Upload ---" }, buf, win, opts)
-				start_upload()
-			else
-				utils.append_to_buffer({ "--- Compilation Failed ---" }, buf, win, opts)
-			end
-		end,
-	})
-end
-
+-- get_boards returns a table of available boards
 function M.get_boards()
 	-- Check if arduino-cli is available
 	if not utils.check_arduino_cli() then
@@ -187,6 +56,7 @@ function M.get_boards()
   return boards
 end
 
+-- get_ports returns a table with the available ports
 function M.get_ports()
 	-- Check if arduino-cli is available
 	if not utils.check_arduino_cli() then
@@ -217,6 +87,109 @@ function M.get_ports()
 	end
 
   return ports
+end
+
+-- Function to check code compilation
+function M.compile(callback)
+	-- Check if arduino-cli is available
+	if not utils.check_arduino_cli() then
+		return
+	end
+
+	-- Create the output window buffer and window
+	local buf, win, opts = utils.create_floating_cli_monitor()
+
+	-- Command to compile in the current directory
+  local cmd = "arduino-cli compile --fqbn " 
+    .. b_config.board_config_table.board 
+    .. " " 
+    .. vim.fn.expand("%:p:h")
+
+	-- Run the command asynchronously
+	vim.fn.jobstart(cmd, {
+		stdout_buffered = false,
+		on_stdout = function(_, data)
+			if data then
+				utils.append_to_buffer(data, buf, win, opts)
+			end
+		end,
+		on_stderr = function(_, data)
+			-- Only append lines that contain actual content to avoid false errors
+			if data and #data > 0 then
+				local error_lines = {}
+				for _, line in ipairs(data) do
+					local cleaned_line = utils.strip_ansi_codes(line)
+					if cleaned_line:match("%S") then -- Only consider non-empty, non-whitespace lines
+						table.insert(error_lines, "Error: " .. cleaned_line)
+					end
+				end
+				if #error_lines > 0 then
+					utils.append_to_buffer(error_lines, buf, win, opts)
+				end
+			end
+		end,
+		on_exit = function(_, exit_code)
+			if exit_code == 0 then
+				utils.append_to_buffer({ "--- Code compilation successful. ---" }, buf, win, opts)
+        if callback then
+          callback(buf, win, opts)
+        end
+			else
+				utils.append_to_buffer({ "--- Code compilation failed. ---" }, buf, win, opts)
+			end
+		end,
+	})
+end
+
+function M.upload()
+	-- Check if arduino-cli is available
+	if not utils.check_arduino_cli() then
+		return
+	end
+
+	local upload_cmd = "arduino-cli upload -p "
+		.. b_config.board_config_table.port
+		.. " --fqbn "
+		.. b_config.board_config_table.board
+		.. " --verify "
+		.. vim.fn.expand("%:p:h")
+
+	-- Function to start upload after successful compilation
+	local function start_upload(buf, win, opts)
+		vim.fn.jobstart(upload_cmd, {
+			stdout_buffered = false,
+			on_stdout = function(_, data)
+				if data then
+					utils.append_to_buffer(data, buf, win, opts)
+				end
+			end,
+			on_stderr = function(_, data)
+				if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
+					utils.append_to_buffer(
+						vim.tbl_map(function(line)
+							return "Error: " .. line
+						end, data),
+						buf,
+						win,
+						opts
+					)
+				end
+			end,
+			on_exit = function(_, exit_code)
+				if exit_code == 0 then
+					utils.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
+				else
+					utils.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
+					-- Suggest checking available ports
+					utils.append_to_buffer({
+						"Hint: Run ':InoList' to check available ports or ':InoSelectPort' to choose a different port",
+					}, buf, win, opts)
+				end
+			end,
+		})
+	end
+
+  M.compile(start_upload)
 end
 
 function M.InoList()

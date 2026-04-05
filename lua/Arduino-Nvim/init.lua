@@ -13,12 +13,10 @@ _ArduinoConfigValues = {
   baudrate = 115200,
   use_default_keymaps = true,
   use_default_commands = true,
-  use_lsp = false,
   keymaps = {},
 }
 
 local function set_default_commands()
-  vim.api.nvim_create_user_command("InoCheck",       commands.compile, {})
   vim.api.nvim_create_user_command("InoMonitor",     commands.monitor, {})
   vim.api.nvim_create_user_command("InoUpload",      commands.upload, {})
   vim.api.nvim_create_user_command("InoUploadSlow",  commands.upload_slow, {})
@@ -31,16 +29,45 @@ local function set_default_commands()
   vim.api.nvim_create_user_command("InoSelectPort",  gui.select_port_gui, {})
   vim.api.nvim_create_user_command("InoStatus",      b_config.board_config_status, {})
 
+  vim.api.nvim_create_user_command("InoCheck",       function()
+    commands.compile()
+  end, {})
   vim.api.nvim_create_user_command("InoSetBaud", function(opts)
     b_config.set_baudrate(opts.args)
   end, { nargs = 1 })
 end
 
+local function update_config(opts)
+  opts = opts or {}
+
+  for key, value in pairs(opts) do
+    if _ArduinoConfigValues[key] == nil then
+      vim.notify(string.format(
+        'Configuration for "%s" not found, please check supported configs in plugin page',
+        key
+      ))
+    end
+    _ArduinoConfigValues[key] = value
+  end
+end
+
 function M.setup(opts)
+  -- Update global config values
+  update_config(opts)
+
+  -- load or create board configuration
   b_config.load_or_create_config()
-  remap.load_keymaps(true)
+
+  -- load keymaps
+  remap.load_keymaps()
+
+  -- load lsp
   lsp.setup_arduino_lsp()
-  set_default_commands()
+
+  -- load default commands
+  if _ArduinoConfigValues.use_default_commands then
+    set_default_commands()
+  end
 end
 
 return M

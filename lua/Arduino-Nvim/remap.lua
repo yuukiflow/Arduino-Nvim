@@ -67,7 +67,13 @@ function M.load_keymaps(use_default_keymaps)
     end
   end, { silent = true , noremap = true })
 
-  if use_default_keymaps then
+  if _ArduinoConfigValues.use_default_keymaps then
+    for _, keymap in pairs(keymaps) do
+      vim.keymap.set(keymap.value or "n", keymap.key, keymap.func, { silent = true })
+    end
+  end
+
+  if #_ArduinoConfigValues.keymaps > 0 then
     for _, keymap in pairs(keymaps) do
       vim.keymap.set(keymap.value or "n", keymap.key, keymap.func, { silent = true })
     end

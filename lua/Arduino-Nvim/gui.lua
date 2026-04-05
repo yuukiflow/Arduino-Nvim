@@ -4,6 +4,7 @@
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
 local utils = require("Arduino-Nvim.utils")
+local lib_manager = require("Arduino-Nvim.libGetter")
 local M = {}
 
 function M.select_board_gui(callback)
@@ -112,6 +113,70 @@ function M.arduino_board_list_gui()
 	local result = handle:read("*a")
 	handle:close()
 	utils.append_to_buffer({ result }, buf, win, opts)
+end
+
+-- Library manager function with Telescope integration
+function M.library_manager_gui()
+  local library_names, installed_libs, outdated_libs = lib_manager.library_manager()
+  if not library_names or #library_names == 0 then
+    return
+  end
+
+  -- Custom entry maker function to include only name and tag in `ordinal`
+  local function entry_maker(entry)
+    if entry and entry.display_name and entry.lib_name then
+      return {
+        value = entry.display_name,
+        display = entry.display_name, -- Show name with markers
+        ordinal = entry.hidden_tag .. " " .. entry.lib_name, -- Use tag and lib_name for searchability
+        lib_name = entry.lib_name, -- Store actual library name
+      }
+    else
+      vim.notify("Error: entry or entry.display_name or entry.lib_name is nil", vim.log.levels.ERROR)
+      return nil
+    end
+  end
+
+  require("telescope.pickers")
+  .new({}, {
+    prompt_title = "Available Arduino Libraries",
+    finder = require("telescope.finders").new_table({
+      results = library_names,
+      entry_maker = entry_maker,
+    }),
+    sorter = require("telescope.config").values.generic_sorter({}),
+    attach_mappings = function(prompt_bufnr, map)
+      local actions = require("telescope.actions")
+      local action_state = require("telescope.actions.state")
+
+      map("i", "<CR>", function()
+        local selection = action_state.get_selected_entry()
+        if selection then
+          local lib_name = selection.lib_name -- Use the actual library name
+          local cmd
+
+          if outdated_libs[lib_name] then
+            -- Update the library if an update is available
+            cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+            os.execute(cmd)
+            vim.notify("Library '" .. lib_name .. "' updated successfully.", vim.log.levels.INFO)
+          else
+            -- Install the library if it's not installed
+            cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+            os.execute(cmd)
+            vim.notify("Library '" .. lib_name .. "' installed successfully.", vim.log.levels.INFO)
+          end
+
+          -- Refresh the picker with updated tick mark and update status
+          actions.close(prompt_bufnr)
+          M.library_manager_gui() -- Reopen picker with updated status
+        end
+        return true
+      end)
+      return true
+    end,
+  })
+  :find()
 end
 
 return M

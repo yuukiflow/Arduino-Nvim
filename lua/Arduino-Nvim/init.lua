@@ -44,4 +44,8 @@ end, {})
 vim.api.nvim_create_user_command("InoList", function()
 	gui.arduino_board_list_gui()
 end, {})
+vim.api.nvim_create_user_command("InoLib", function()
+	gui.library_manager_gui()
+end, {})
+
 return M

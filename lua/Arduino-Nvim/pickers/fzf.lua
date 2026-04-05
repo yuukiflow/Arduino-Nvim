@@ -118,13 +118,24 @@ function M.open_library_manager()
 
   for _, entry in ipairs(library_names) do
     if entry and entry.display_name and entry.lib_name then
+      local icon = "+"
+      if installed_libs[entry.lib_name] then
+        icon = "✓"
+      end
+      if outdated_libs[entry.lib_name] then
+        icon = "↑"
+      end
+
+      local display = icon .. " " .. entry.display_name
+
       local line = string.format(
         "%s|%s %s|%s",
-        entry.display_name,      -- visible
-        entry.hidden_tag or "",  -- searchable
-        entry.lib_name,          -- searchable
-        entry.lib_name           -- real value
+        display,                
+        entry.hidden_tag or "",
+        entry.lib_name,         
+        entry.lib_name          
       )
+
       table.insert(items, line)
     end
   end
@@ -139,17 +150,24 @@ function M.open_library_manager()
       ["default"] = function(selected)
         local line = selected[1]
         local lib_name = line:match("|([^|]+)$")
-
         if not lib_name then return end
 
-        local cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
-        os.execute(cmd)
+        local cmd
+        local message
 
-        if outdated_libs[lib_name] then
-          vim.notify("Library '" .. lib_name .. "' updated successfully.")
+        if installed_libs[lib_name] and not outdated_libs[lib_name] then
+          cmd = 'arduino-cli lib uninstall "' .. lib_name .. '" > /dev/null 2>&1'
+          message = "Library '" .. lib_name .. "' uninstalled."
+        elseif outdated_libs[lib_name] then
+          cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+          message = "Library '" .. lib_name .. "' updated."
         else
-          vim.notify("Library '" .. lib_name .. "' installed successfully.")
+          cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+          message = "Library '" .. lib_name .. "' installed."
         end
+
+        os.execute(cmd)
+        vim.notify(message)
 
         vim.defer_fn(function()
           M.open_library_manager()

@@ -98,14 +98,22 @@ function M.open_library_manager()
       picker:close()
 
       local lib_name = entry.lib_name
-      local cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
-      os.execute(cmd)
+      local cmd
+      local message
 
-      if outdated_libs[lib_name] then
-        vim.notify("Library '" .. lib_name .. "' updated successfully.")
+      if installed_libs[lib_name] and not outdated_libs[lib_name] then
+        cmd = 'arduino-cli lib uninstall "' .. lib_name .. '" > /dev/null 2>&1'
+        message = "Library '" .. lib_name .. "' uninstalled."
+      elseif outdated_libs[lib_name] then
+        cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+        message = "Library '" .. lib_name .. "' updated."
       else
-        vim.notify("Library '" .. lib_name .. "' installed successfully.")
+        cmd = 'arduino-cli lib install "' .. lib_name .. '" > /dev/null 2>&1'
+        message = "Library '" .. lib_name .. "' installed."
       end
+
+      os.execute(cmd)
+      vim.notify(message)
 
       vim.defer_fn(function()
         M.open_library_manager()

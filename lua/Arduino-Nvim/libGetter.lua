@@ -148,11 +148,9 @@ function M.library_manager()
       local tag = "[uninstalled]" -- Default tag
 
       if installed_libs[lib.name] then
-        display_name = "✅ " .. display_name -- Add tick mark for installed libs
         tag = "[installed]"
 
         if outdated_libs[lib.name] then
-          display_name = "🔄 " .. display_name -- Append update available icon
           tag = "[outdated]"
         end
       end

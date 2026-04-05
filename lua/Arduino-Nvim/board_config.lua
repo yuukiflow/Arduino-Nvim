@@ -51,7 +51,6 @@ function M.set_baudrate(baudrate)
 	utils.save_config(M.board_config_table)
 end
 
-
 -- Function to save settings to the config file
 function M.load_or_create_config()
 	-- Check if sketch.yaml exists
@@ -75,7 +74,6 @@ function M.load_or_create_config()
 		end
 	end
 end
-M.load_or_create_config()
 
 function M.board_config_status()
 	local buf, win, opts = utils.create_floating_cli_monitor()

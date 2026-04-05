@@ -1,6 +1,7 @@
 local M = {}
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
+b_config.load_or_create_config()
 
 vim.api.nvim_create_user_command("InoSelectBoard", function()
 	commands.select_board_gui()

@@ -77,4 +77,22 @@ function M.board_config_status()
 	gui.show_in_floating_window({ data })
 end
 
+function M.arduino_board_list()
+	-- Check if arduino-cli is available
+	if not utils.check_arduino_cli() then
+		return
+	end
+
+	-- list all available ports1
+	local handle = io.popen("arduino-cli board list")
+	if not handle then
+		vim.notify("Error: Failed to execute arduino-cli board list", vim.log.levels.ERROR)
+		return
+	end
+	local result = handle:read("*a")
+	handle:close()
+	gui.show_in_floating_window({ result })
+end
+
+
 return M

@@ -4,23 +4,6 @@
 local utils = require("Arduino-Nvim.utils")
 local M = {}
 
-function M.arduino_board_list_gui()
-	-- Check if arduino-cli is available
-	if not utils.check_arduino_cli() then
-		return
-	end
-
-	-- list all available ports1
-	local handle = io.popen("arduino-cli board list")
-	if not handle then
-		vim.notify("Error: Failed to execute arduino-cli board list", vim.log.levels.ERROR)
-		return
-	end
-	local result = handle:read("*a")
-	handle:close()
-	M.show_in_floating_window({ result })
-end
-
 local floating_window_data = {}
 local function close_window_clear_data()
   if floating_window_data.win

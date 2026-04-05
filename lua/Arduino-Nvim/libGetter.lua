@@ -106,21 +106,26 @@ local function get_libraries_with_updates()
 	local ok, outdated_data = pcall(json.decode, result)
 	local outdated_libs = {}
 
-	if ok and outdated_data and outdated_data.libraries then
-		for _, lib_entry in ipairs(outdated_data.libraries) do
-			local lib_info = lib_entry.library
-			local lib_name = lib_info and lib_info.name
-			local latest_version = lib_entry.release and lib_entry.release.version
+  if not ok or not outdated_data then
+    vim.notify("Failed to fetch outdated libraries. ", vim.log.levels.ERROR)
+    return outdated_libs
+  end
 
-			if lib_name and latest_version then
-				outdated_libs[lib_name] = latest_version -- Store latest version for display
-			else
-				vim.notify("Warning: Missing lib_name or latest_version for entry", vim.log.levels.WARN)
-			end
-		end
-	else
-		vim.notify("Failed to fetch outdated libraries.", vim.log.levels.ERROR)
-	end
+  if not outdated_data.libraries then
+    return outdated_libs
+  end
+
+  for _, lib_entry in ipairs(outdated_data.libraries) do
+    local lib_info = lib_entry.library
+    local lib_name = lib_info and lib_info.name
+    local latest_version = lib_entry.release and lib_entry.release.version
+
+    if lib_name and latest_version then
+      outdated_libs[lib_name] = latest_version -- Store latest version for display
+    else
+      vim.notify("Warning: Missing lib_name or latest_version for entry", vim.log.levels.WARN)
+    end
+  end
 
 	return outdated_libs
 end

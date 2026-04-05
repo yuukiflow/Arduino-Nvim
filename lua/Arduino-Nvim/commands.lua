@@ -2,6 +2,7 @@ local M = {}
 
 -- Load dependencies
 local utils = require("Arduino-Nvim.utils")
+local gui = require("Arduino-Nvim.gui")
 
 -- get_boards returns a table of available boards
 function M.get_boards()
@@ -95,9 +96,6 @@ function M.compile(callback)
 		return
 	end
 
-	-- Create the output window buffer and window
-	local buf, win, opts = utils.create_floating_cli_monitor()
-
 	-- Command to compile in the current directory
   local cmd = "arduino-cli compile --fqbn " 
     .. _ArduinoConfigValues.board 
@@ -109,7 +107,7 @@ function M.compile(callback)
 		stdout_buffered = false,
 		on_stdout = function(_, data)
 			if data then
-				utils.append_to_buffer(data, buf, win, opts)
+				gui.show_in_floating_window(data)
 			end
 		end,
 		on_stderr = function(_, data)
@@ -123,18 +121,18 @@ function M.compile(callback)
 					end
 				end
 				if #error_lines > 0 then
-					utils.append_to_buffer(error_lines, buf, win, opts)
+					gui.show_in_floating_window(error_lines)
 				end
 			end
 		end,
 		on_exit = function(_, exit_code)
 			if exit_code == 0 then
-				utils.append_to_buffer({ "--- Code compilation successful. ---" }, buf, win, opts)
+				gui.show_in_floating_window({ "--- Code compilation successful. ---" })
         if callback then
-          callback(buf, win, opts)
+          callback()
         end
 			else
-				utils.append_to_buffer({ "--- Code compilation failed. ---" }, buf, win, opts)
+				gui.show_in_floating_window({ "--- Code compilation failed. ---" })
 			end
 		end,
 	})
@@ -154,35 +152,32 @@ function M.upload()
 		.. vim.fn.expand("%:p:h")
 
 	-- Function to start upload after successful compilation
-	local function start_upload(buf, win, opts)
+	local function start_upload()
 		vim.fn.jobstart(upload_cmd, {
 			stdout_buffered = false,
 			on_stdout = function(_, data)
 				if data then
-					utils.append_to_buffer(data, buf, win, opts)
+          gui.show_in_floating_window(data)
 				end
 			end,
 			on_stderr = function(_, data)
 				if data and #data > 0 and data[1]:match("%S") then -- Only log if there is actual error content
-					utils.append_to_buffer(
+					gui.show_in_floating_window(
 						vim.tbl_map(function(line)
 							return "Error: " .. line
-						end, data),
-						buf,
-						win,
-						opts
+						end, data)
 					)
 				end
 			end,
 			on_exit = function(_, exit_code)
 				if exit_code == 0 then
-					utils.append_to_buffer({ "--- Upload Complete ---" }, buf, win, opts)
+					gui.show_in_floating_window({ "--- Upload Complete ---" })
 				else
-					utils.append_to_buffer({ "--- Upload Failed ---" }, buf, win, opts)
+					gui.show_in_floating_window({ "--- Upload Failed ---" })
 					-- Suggest checking available ports
-					utils.append_to_buffer({
+					gui.show_in_floating_window({
 						"Hint: Run ':InoList' to check available ports or ':InoSelectPort' to choose a different port",
-					}, buf, win, opts)
+					})
 				end
 			end,
 		})

@@ -4,7 +4,7 @@ local lib_manager = require("Arduino-Nvim.libGetter")
 local M = {}
 
 function M.select_board()
-  boards = commands.get_boards()
+  local boards = commands.get_boards()
   if #boards == 0 then
     return
   end
@@ -19,7 +19,7 @@ function M.select_board()
 end
 
 function M.select_port()
-  ports = commands.get_ports_v2()
+  local ports = commands.get_ports_v2()
   if #ports == 0 then
     return
   end
@@ -73,7 +73,7 @@ function M.select_board_and_port()
 end
 
 function M.open_library_manager()
-  lib_names, installed_libs, outdated_libs = lib_manager.library_manager()
+  local lib_names, installed_libs, outdated_libs = lib_manager.library_manager()
   vim.notify("This backend does not support large amount of data, to search and install other libraries, please use another backend, only showing installed and outdated libraries")
   vim.notify("Installed libraries: "..vim.inspect(installed_libs))
   vim.notify("Outdated libraries: "..vim.inspect(outdated_libs))

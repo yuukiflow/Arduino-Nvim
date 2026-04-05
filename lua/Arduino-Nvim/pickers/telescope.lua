@@ -147,7 +147,7 @@ function M.open_library_manager()
 
           -- Refresh the picker with updated tick mark and update status
           actions.close(prompt_bufnr)
-          M.library_manager_gui() -- Reopen picker with updated status
+          M.open_library_manager() -- Reopen picker with updated status
         end
         return true
       end)

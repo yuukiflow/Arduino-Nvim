@@ -257,9 +257,10 @@ function M.monitor()
 			)
 
 			local serial_command = string.format(
-        "arduino-cli monitor -p %s -b %s",
+        "arduino-cli monitor -p %s -b %s --config %d",
         _ArduinoConfigValues.port,
-        _ArduinoConfigValues.board
+        _ArduinoConfigValues.board,
+        _ArduinoConfigValues.baudrate
       )
 
 			-- Create a new buffer for the terminal

@@ -29,6 +29,8 @@ local function create_floating_window(opts)
   local opts = opts or {}
 	local width = opts.width or vim.o.columns -- Full width of the screen
 	local height = opts.height or 5 -- Start with a small height (adjustable)
+  local row = opts.row or (vim.o.lines - height - 2)
+  local col = opts.col or 0
 
 	-- Create a buffer for the floating window
 	local buf = vim.api.nvim_create_buf(false, true)
@@ -38,8 +40,8 @@ local function create_floating_window(opts)
 		relative = "editor",
 		width = width,
 		height = height,
-		row = vim.o.lines - height - 2, -- Position at the bottom
-		col = 0,
+		row = row, -- Position at the bottom
+		col = col,
 		style = "minimal",
 		border = "rounded", -- Optional: add border for visual separation
 	}
@@ -85,6 +87,10 @@ function M.show_in_floating_window(data, opts)
   if not floating_window_data.win
     or not vim.api.nvim_win_is_valid(floating_window_data.win) then
     create_floating_window(opts)
+  end
+
+  if not data then
+    return
   end
 
   append_to_buffer(data)

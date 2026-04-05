@@ -75,7 +75,17 @@ function M.load_or_create_config()
 		end
 	end
 end
-
 M.load_or_create_config()
+
+function M.board_config_status()
+	local buf, win, opts = utils.create_floating_cli_monitor()
+	local data = string.format(
+    "Board: %s\nPort: %s\nBaudrate: %s",
+    M.board_config_table.board,
+    M.board_config_table.port,
+    M.board_config_table.baudrate)
+	utils.append_to_buffer({ data }, buf, win, opts)
+end
+
 
 return M

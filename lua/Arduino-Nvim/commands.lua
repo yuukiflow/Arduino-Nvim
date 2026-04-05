@@ -8,12 +8,6 @@ require("Arduino-Nvim.libGetter")
 
 remap.load_keymaps()
 
-function M.status()
-	local buf, win, opts = utils.create_floating_cli_monitor()
-	local data = string.format("Board: %s\nPort: %s\nBaudrate: %s", b_config.board_config_table.board, b_config.board_config_table.port, b_config.board_config_table.baudrate)
-	utils.append_to_buffer({ data }, buf, win, opts)
-end
-
 -- Function to check code
 function M.check()
 	-- Check if arduino-cli is available

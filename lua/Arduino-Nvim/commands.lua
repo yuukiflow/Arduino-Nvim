@@ -2,11 +2,7 @@ local M = {}
 
 -- Load dependencies
 local utils = require("Arduino-Nvim.utils")
-local remap = require("Arduino-Nvim.remap")
 local b_config = require("Arduino-Nvim.board_config")
-require("Arduino-Nvim.libGetter")
-
-remap.load_keymaps()
 
 -- Function to check code
 function M.check()

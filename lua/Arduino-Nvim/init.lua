@@ -1,7 +1,11 @@
-local M = {}
+local remap = require("Arduino-Nvim.remap")
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
+require("Arduino-Nvim.libGetter")
+local M = {}
+
 b_config.load_or_create_config()
+remap.load_keymaps()
 
 vim.api.nvim_create_user_command("InoSelectBoard", function()
 	commands.select_board_gui()

@@ -189,25 +189,8 @@ function M.upload()
 		})
 	end
 
+  -- compile code and upload as a callback
   M.compile(start_upload)
-end
-
-function M.InoList()
-	-- Check if arduino-cli is available
-	if not utils.check_arduino_cli() then
-		return
-	end
-
-	local buf, win, opts = utils.create_floating_cli_monitor()
-	-- list all available ports1
-	local handle = io.popen("arduino-cli board list")
-	if not handle then
-		vim.notify("Error: Failed to execute arduino-cli board list", vim.log.levels.ERROR)
-		return
-	end
-	local result = handle:read("*a")
-	handle:close()
-	utils.append_to_buffer({ result }, buf, win, opts)
 end
 
 function M.monitor()
@@ -339,7 +322,12 @@ function M.upload_reset()
 	-- Wait a moment for reset
 	vim.defer_fn(function()
 		-- Try upload after reset
-		local upload_cmd = "arduino-cli upload -p " .. b_config.board_config_table.port .. " --fqbn " .. b_config.board_config_table.board .. " " .. vim.fn.expand("%:p:h")
+		local upload_cmd = "arduino-cli upload -p " 
+    .. b_config.board_config_table.port 
+    .. " --fqbn " 
+    .. b_config.board_config_table.board 
+    .. " --verify " 
+    .. vim.fn.expand("%:p:h")
 		utils.append_to_buffer({ "Starting upload after reset..." }, buf, win, opts)
 
 		vim.fn.jobstart(upload_cmd, {

@@ -2,11 +2,13 @@ local remap = require("Arduino-Nvim.remap")
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
 local gui = require("Arduino-Nvim.gui")
+local lsp = require("Arduino-Nvim.lsp")
 require("Arduino-Nvim.libGetter")
 local M = {}
 
 b_config.load_or_create_config()
 remap.load_keymaps()
+lsp.setup_arduino_lsp()
 
 vim.api.nvim_create_user_command("InoSelectBoard", function()
 	gui.select_board_gui()
@@ -40,6 +42,6 @@ vim.api.nvim_create_user_command("InoStatus", function()
 	b_config.board_config_status()
 end, {})
 vim.api.nvim_create_user_command("InoList", function()
-	commands.InoList()
+	gui.arduino_board_list_gui()
 end, {})
 return M

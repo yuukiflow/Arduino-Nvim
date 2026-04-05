@@ -3,6 +3,7 @@
 -- windows or display selectors
 local commands = require("Arduino-Nvim.commands")
 local b_config = require("Arduino-Nvim.board_config")
+local utils = require("Arduino-Nvim.utils")
 local M = {}
 
 function M.select_board_gui(callback)
@@ -93,6 +94,24 @@ function M.gui()
 			vim.notify("Failed to check for connected boards.", vim.log.levels.WARN)
 		end
 	end)
+end
+
+function M.arduino_board_list_gui()
+	-- Check if arduino-cli is available
+	if not utils.check_arduino_cli() then
+		return
+	end
+
+	local buf, win, opts = utils.create_floating_cli_monitor()
+	-- list all available ports1
+	local handle = io.popen("arduino-cli board list")
+	if not handle then
+		vim.notify("Error: Failed to execute arduino-cli board list", vim.log.levels.ERROR)
+		return
+	end
+	local result = handle:read("*a")
+	handle:close()
+	utils.append_to_buffer({ result }, buf, win, opts)
 end
 
 return M

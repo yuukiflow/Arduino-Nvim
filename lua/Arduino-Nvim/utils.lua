@@ -20,6 +20,15 @@ local function adjust_window_height(win, buf, opts)
 	vim.api.nvim_win_set_config(win, opts)
 end
 
+-- Helper function to find executable in PATH
+function M.find_executable(name)
+	local path = vim.fn.exepath(name)
+	if path and path ~= "" then
+		return path
+	end
+	return nil
+end
+
 -- Utility function to strip ANSI escape codes
 function M.strip_ansi_codes(line)
 	return line:gsub("\27%[[0-9;]*m", "")

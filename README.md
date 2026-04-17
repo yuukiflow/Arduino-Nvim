@@ -24,10 +24,42 @@ development experience for Arduino projects.
 - [arduino-cli][acli] (latest stable version)
 - [arduino-language-server][als]
 - [clangd][clangd] (latest stable version)
-- [telescope.nvim][telescope]
+- picker (either)
+    - [telescope.nvim][https://github.com/nvim-telescope/telescope.nvim]
+    - [snacks.nvim][https://github.com/folke/snacks.nvim]
+    - [mini.pick][https://github.com/nvim-mini/mini.pick]
 - [nvim-lspconfig][nvim-lspconfig]
 
-## 🚀 Installation (LazyVim)
+
+## 🚀 Installation
+
+### 🚀 Neovim 0.12+
+
+Add this to your `lua/plugins/arduino.lua`:
+
+```lua
+vim.pack.add({
+  { src = "https://github.com/yuukiflow/Arduino-Nvim" },
+  -- dependencies
+  { src = "https://github.com/nvim-telescope/telescope.nvim" },
+  -- { src = "https://github.com/folke/snacks.nvim" },
+  -- { src = "https://github.com/nvim-mini/mini.pick" },
+  { src = "https://github.com/neovim/nvim-lspconfig" },
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "arduino",
+  callback = function()
+	vim.cmd.packadd("Arduino-Nvim")
+	require("Arduino-Nvim").setup({ 
+      picker = "telescope" -- 'telescope' | 'snacks' | 'mini' (mini.pick) | nil (auto)
+    })
+  end,
+  once = true,
+})
+```
+
+### 🚀 Lazy.nvim
 
 Add this to your `lua/plugins/arduino.lua`:
 
@@ -43,6 +75,7 @@ return {
     vim.api.nvim_create_autocmd("FileType", {
       pattern = "arduino",
       callback = function()
+        -- defaults to available picker if not set
         require("Arduino-Nvim")
       end,
     })

@@ -34,19 +34,12 @@ Add this to your `lua/plugins/arduino.lua`:
 ```lua
 return {
   "yuukiflow/Arduino-Nvim",
+  ft = "arduino",
+  opts = {},
   dependencies = {
     "nvim-telescope/telescope.nvim",
     "neovim/nvim-lspconfig",
   },
-  config = function()
-    -- Load Arduino plugin for .ino files
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = "arduino",
-      callback = function()
-        require("Arduino-Nvim")
-      end,
-    })
-  end,
 }
 ```
 
@@ -57,20 +50,52 @@ If you're developing locally:
 ```lua
 return {
   dir = vim.fn.stdpath("config") .. "/lua/Arduino-Nvim",
+  ft = "arduino",
+  opts = {},
   dependencies = {
     "nvim-telescope/telescope.nvim",
     "neovim/nvim-lspconfig",
   },
-  config = function()
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = "arduino",
-      callback = function()
-        require("Arduino-Nvim")
-      end,
-    })
-  end,
 }
 ```
+
+### Configuration table
+You can update the `opts` table with these values:
+
+```lua
+-- opts default values
+opts = {
+    config_file = ".arduino_config.lua", -- filename used to persist the config
+    board = "arduino:avr:uno", -- target board
+    port = "/dev/ttyUSB0", -- target port
+    baudrate = 115200, -- target baudrate
+    use_default_keymaps = true, -- load default keymaps
+    use_default_commands = true, -- load default commands
+    keymaps = {}, -- custom keymaps
+    picker_backend = "telescope", -- backend to use for user input commands
+}
+```
+
+Supported picker backends are:
+- `telescope` (requires `telescope.nvim`)
+- `nvim` (uses `vim.ui.select` api)
+
+Also, you can add your custom keymaps that will be uploaded after default ones (if `use_default_keymaps` is `true`):
+
+```lua
+opts = {
+    keymaps = {
+        {
+            mode = "n", -- mode for keymap ("n" for normal)
+            key = "<Leader>ak", -- keymap to trigger function
+            func = ":InoLib<CR>", -- function to run, also can be a function()
+            desc = "Open library manager", -- description for keymap (optional)
+            opts = { silent = true }, -- opts for keymap (optional)
+        },
+    }
+}
+```
+
 
 ## 🎮 Keymaps
 

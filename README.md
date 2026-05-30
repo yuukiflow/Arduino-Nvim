@@ -38,6 +38,7 @@ return {
   opts = {},
   dependencies = {
     "nvim-telescope/telescope.nvim",
+    -- optional: remove if you use Neovim's built-in LSP (>= 0.11)
     "neovim/nvim-lspconfig",
   },
 }
@@ -101,24 +102,24 @@ opts = {
 
 All commands are prefixed with `<Leader>a` followed by a single letter:
 
-| Keymap | Command | Description |
-|--------|---------|-------------|
-| `<Leader>ac` | `:InoCheck` | Compile and verify current sketch |
-| `<Leader>au` | `:InoUpload` | Upload sketch to board |
-| `<Leader>ar` | `:InoUploadReset` | Upload with manual reset (for UNO R4 WiFi) |
-| `<Leader>am` | `:InoMonitor` | Open serial monitor with configuration display |
-| `<Leader>as` | `:InoStatus` | Display current board, port, and FQBN status |
-| `<Leader>al` | `:InoLib` | Open library manager (Telescope interface) |
-| `<Leader>ag` | `:InoGUI` | Open GUI for setting board and port |
-| `<Leader>ap` | `:InoSelectPort` | Select Arduino port from available ports |
-| `<Leader>ab` | `:InoSelectBoard` | Select Arduino board from available boards |
+| Keymap       | Command           | Description                                    |
+| ------------ | ----------------- | ---------------------------------------------- |
+| `<Leader>ac` | `:InoCheck`       | Compile and verify current sketch              |
+| `<Leader>au` | `:InoUpload`      | Upload sketch to board                         |
+| `<Leader>ar` | `:InoUploadReset` | Upload with manual reset (for UNO R4 WiFi)     |
+| `<Leader>am` | `:InoMonitor`     | Open serial monitor with configuration display |
+| `<Leader>as` | `:InoStatus`      | Display current board, port, and FQBN status   |
+| `<Leader>al` | `:InoLib`         | Open library manager (Telescope interface)     |
+| `<Leader>ag` | `:InoGUI`         | Open GUI for setting board and port            |
+| `<Leader>ap` | `:InoSelectPort`  | Select Arduino port from available ports       |
+| `<Leader>ab` | `:InoSelectBoard` | Select Arduino board from available boards     |
 
 ## 🔧 Additional Commands
 
-| Command | Description |
-|---------|-------------|
-| `:InoDebugUpload` | Debug upload process with detailed information |
-| `:InoList` | List all available Arduino ports |
+| Command              | Description                                           |
+| -------------------- | ----------------------------------------------------- |
+| `:InoDebugUpload`    | Debug upload process with detailed information        |
+| `:InoList`           | List all available Arduino ports                      |
 | `:InoSetBaud <rate>` | Set serial monitor baudrate (e.g. `:InoSetBaud 9600`) |
 
 ## ⚙️ Configuration
@@ -127,7 +128,7 @@ The plugin automatically creates and manages a `.arduino_config.lua` file in you
 project directory to store:
 
 - Board type (FQBN)
-- Port selection  
+- Port selection
 - Baudrate settings
 
 ### Example Configuration File
@@ -135,7 +136,7 @@ project directory to store:
 ```lua
 return {
   board = "arduino:renesas_uno:unor4wifi",
-  port = "/dev/ttyACM0", 
+  port = "/dev/ttyACM0",
   baudrate = "9600",
 }
 ```
@@ -164,7 +165,7 @@ For Arduino UNO R4 WiFi upload issues:
 The library manager provides a Telescope interface with:
 
 - ✅ Visual indicators for installed libraries
-- 🔄 Update detection for outdated libraries  
+- 🔄 Update detection for outdated libraries
 - One-click installation and updates
 - Cached library data for improved performance
 - Search and filter capabilities

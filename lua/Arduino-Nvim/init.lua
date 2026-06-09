@@ -10,6 +10,7 @@ _ArduinoConfigValues = {
   use_default_keymaps = true,
   use_default_commands = true,
   keymaps = {},
+  compile_options = {},
 }
 
 local function set_default_commands(commands, b_config, picker)

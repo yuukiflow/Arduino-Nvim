@@ -60,6 +60,7 @@ function M.load_or_create_config()
           _ArduinoConfigValues.board = settings.board or _ArduinoConfigValues.board
           _ArduinoConfigValues.port = settings.port or _ArduinoConfigValues.port
           _ArduinoConfigValues.baudrate = settings.baudrate or _ArduinoConfigValues.baudrate
+          _ArduinoConfigValues.compile_options = settings.compile_options or _ArduinoConfigValues.compile_options
 				vim.notify(
           "Config loaded from file: " .. _ArduinoConfigValues.config_file,
           vim.log.levels.INFO)

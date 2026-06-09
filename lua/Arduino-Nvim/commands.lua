@@ -143,8 +143,18 @@ function M.compile(callback)
 	-- Command to compile in the current directory
   local cmd = "arduino-cli compile --fqbn " 
     .. _ArduinoConfigValues.board 
-    .. " " 
-    .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
+
+  -- Check for compile options available for arduino-cli compile
+  if next(_ArduinoConfigValues.compile_options) ~= nil then
+    if _ArduinoConfigValues.compile_options.build_property ~= "" then
+      cmd = cmd .. " --build-property " .. _ArduinoConfigValues.compile_options.build_property
+    end
+  end
+
+  -- Add current folder at the end
+    cmd = cmd 
+      .. " " 
+      .. vim.fn.shellescape(vim.fn.expand("%:p:h"))
 
 	-- Run the command asynchronously
 	vim.fn.jobstart(cmd, {

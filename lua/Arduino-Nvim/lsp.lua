@@ -80,25 +80,34 @@ function M.setup_arduino_lsp()
 
 	-- Configure the Arduino language server using loaded settings
   if vim.fn.has('nvim-0.11.0') == 1 then
-    local util = require('lspconfig.util')
     vim.lsp.config['arduino-language-server'] = {
-      cmd = lspconfig_table["cmd"],
-      filetypes = lspconfig_table['filetypes'],
+      cmd = lspconfig_table.cmd,
+      filetypes = lspconfig_table.filetypes,
       root_dir = function(bufnr, on_dir)
         local fname = vim.api.nvim_buf_get_name(bufnr)
-        on_dir(util.root_pattern('*.ino')(fname))
+        local dir = vim.fs.dirname(fname)
+
+        local root = vim.fs.find(function(name)
+          return name:match('%.ino$') ~= nil
+        end, {
+          path = dir,
+          upward = true,
+        })[1]
+
+        if root then
+          on_dir(vim.fs.dirname(root))
+        end
       end,
       capabilities = {
         textDocument = {
-          ---@diagnostic disable-next-line: assign-type-mismatch
           semanticTokens = vim.NIL,
         },
         workspace = {
-          ---@diagnostic disable-next-line: assign-type-mismatch
           semanticTokens = vim.NIL,
         },
       },
     }
+
     vim.lsp.enable('arduino-language-server')
   else
     require("lspconfig").arduino_language_server.setup({

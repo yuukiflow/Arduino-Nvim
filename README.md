@@ -24,8 +24,8 @@ development experience for Arduino projects.
 - [arduino-cli][acli] (latest stable version)
 - [arduino-language-server][als]
 - [clangd][clangd] (latest stable version)
-- [telescope.nvim][telescope]
-- [nvim-lspconfig][nvim-lspconfig]
+- telescope.nvim - optional: you can choose a different picker, see pickers below
+- nvim-lspconfig - for nvim <= 0.10.0
 
 ## 🚀 Installation (LazyVim)
 
@@ -80,6 +80,8 @@ opts = {
 Supported picker backends are:
 - `telescope` (requires `telescope.nvim`)
 - `nvim` (uses `vim.ui.select` api)
+- `fzf` (requires `fzf-lua`)
+- `snacks` (requires `snacks.nvim`)
 
 Also, you can add your custom keymaps that will be uploaded after default ones (if `use_default_keymaps` is `true`):
 

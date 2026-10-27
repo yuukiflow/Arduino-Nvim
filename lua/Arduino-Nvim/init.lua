@@ -9,6 +9,7 @@ _ArduinoConfigValues = {
   picker_backend = "telescope",
   use_default_keymaps = true,
   use_default_commands = true,
+  lsp = true,
   keymaps = {},
   compile_options = {},
 }
@@ -64,7 +65,9 @@ function M.setup(opts)
   remap.load_keymaps()
 
   -- load lsp
-  lsp.setup_arduino_lsp()
+  if _ArduinoConfigValues.lsp then
+    lsp.setup_arduino_lsp()
+  end
 
   -- load default commands
   if _ArduinoConfigValues.use_default_commands then

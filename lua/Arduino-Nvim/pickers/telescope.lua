@@ -33,7 +33,7 @@ function M.select_board(callback)
 					if selection then
 						b_config.set_board(selection.value) -- Use the selected FQBN
 						actions.close(prompt_bufnr)
-						if callback then
+						if type(callback) == "function" then
 							callback()
 						end
 					end
